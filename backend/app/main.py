@@ -1,0 +1,239 @@
+from fastapi import FastAPI, Depends, HTTPException, status, Request
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
+import logging
+import json
+from typing import List
+
+from database import engine, get_db
+import models
+from models import User
+import schemas
+from schemas import UserCreate, UserLogin, TaskResponse, AnswerCreate, ProgressUpdate, TaskCreate
+from auth import get_current_user, create_access_token, get_password_hash, verify_password
+import crud
+from config import settings
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+models.Base.metadata.create_all(bind=engine)
+
+app = FastAPI(title="Math Academy API", version="1.0.0")
+
+# Middleware для логирования запросов
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    if "/users/tasks/" in str(request.url) or "/users/answers/" in str(request.url):
+        try:
+            body = await request.body()
+            body_json = json.loads(body.decode()) if body else {}
+            logger.info(f"📥 ВХОДЯЩИЙ ЗАПРОС: {request.method} {request.url}")
+            if body:
+                logger.info(f"📦 ТЕЛО ЗАПРОСА: {json.dumps(body_json, indent=2)}")
+            
+            # Восстанавливаем body для дальнейшей обработки
+            async def receive():
+                return {'type': 'http.request', 'body': body}
+            request._receive = receive
+            
+        except Exception as e:
+            logger.info(f"📥 ВХОДЯЩИЙ ЗАПРОС: {request.method} {request.url}")
+            logger.info(f"❌ Ошибка парсинга тела: {e}")
+    
+    response = await call_next(request)
+    return response
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.BACKEND_CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.get("/")
+async def root():
+    return {"message": "Math Academy API is running"}
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "service": "math-academy-api"}
+
+@app.post("/api/auth/register")
+def register(user_data: UserCreate, db: Session = Depends(get_db)):
+    try:
+        user = crud.create_user(db, user_data)
+        access_token = create_access_token(data={"sub": str(user.id)})
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user_id": user.id,
+            "email": user.email,
+            "username": user.username
+        }
+    except Exception as e:
+        logger.error(f"Registration error: {e}")
+        raise HTTPException(status_code=400, detail="Registration failed")
+
+@app.post("/api/auth/login")
+def login(login_data: UserLogin, db: Session = Depends(get_db)):
+    user = crud.authenticate_user(db, login_data.email, login_data.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    access_token = create_access_token(data={"sub": str(user.id)})
+    
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user_id": user.id,
+        "email": user.email,
+        "username": user.username
+    }
+
+@app.get("/api/auth/me")
+def get_current_user_info(current_user: User = Depends(get_current_user)):
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+        "username": current_user.username,
+        "grade": current_user.grade,
+        "is_active": True
+    }
+
+@app.get("/api/course/structure")
+async def get_course_structure():
+    return {
+        "days": 14,
+        "title": "Math Academy - 6th Grade",
+        "description": "14-day math course for 6th grade students"
+    }
+
+@app.get("/api/course/day/{day_number}/tasks")
+async def generate_tasks(day_number: int, db: Session = Depends(get_db)):
+    from course_generator import generate_day_tasks
+    try:
+        tasks = generate_day_tasks(day_number)
+        return {"day": day_number, "tasks": tasks}
+    except Exception as e:
+        logger.error(f"Ошибка генерации заданий: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate tasks")
+
+@app.get("/api/course/progress")
+def get_progress(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    try:
+        progress = crud.get_user_progress(db, current_user.id)
+        return progress
+    except Exception as e:
+        logger.error(f"Ошибка получения прогресса: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get progress")
+
+@app.post("/api/course/progress/{day}")
+def update_progress(day: int, progress_data: ProgressUpdate, 
+                   current_user: User = Depends(get_current_user), 
+                   db: Session = Depends(get_db)):
+    try:
+        progress = crud.update_user_progress(db, current_user.id, day, progress_data.completed_tasks)
+        return {"status": "success", "day": day, "completed_tasks": progress.completed_tasks}
+    except Exception as e:
+        logger.error(f"Ошибка обновления прогресса: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update progress")
+
+@app.post("/api/course/reset-progress")
+def reset_progress(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    try:
+        result = crud.reset_user_progress(db, current_user.id)
+        return result
+    except Exception as e:
+        logger.error(f"Ошибка сброса прогресса: {e}")
+        raise HTTPException(status_code=500, detail="Failed to reset progress")
+
+@app.get("/api/users/tasks")
+def get_all_user_tasks(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    try:
+        tasks = crud.get_user_tasks(db, current_user.id)
+        return tasks
+    except Exception as e:
+        logger.error(f"Ошибка получения заданий: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get tasks")
+
+@app.get("/api/users/tasks/{day}")
+def get_user_tasks_by_day(day: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    try:
+        tasks = crud.get_user_tasks(db, current_user.id)
+        day_tasks = tasks.get(str(day), [])
+        return {"day": day, "tasks": day_tasks}
+    except Exception as e:
+        logger.error(f"Ошибка получения заданий дня: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get day tasks")
+
+@app.post("/api/users/tasks/{day}")
+def save_user_tasks(day: int, tasks: List[TaskCreate], 
+                   current_user: User = Depends(get_current_user), 
+                   db: Session = Depends(get_db)):
+    try:
+        logger.info(f"💾 Начало сохранения заданий дня {day}")
+        logger.info(f"📥 Получено {len(tasks)} заданий")
+        
+        # Преобразуем Pydantic модели в словари для crud
+        tasks_data = [task.dict() for task in tasks]
+        result = crud.save_user_tasks(db, current_user.id, day, tasks_data)
+        
+        logger.info(f"✅ Задания успешно сохранены: {result}")
+        return result
+        
+    except Exception as e:
+        logger.error(f"❌ Ошибка сохранения заданий: {e}")
+        import traceback
+        logger.error(f"❌ Traceback: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail="Failed to save tasks")
+
+# 🟢 ИСПРАВЛЕННЫЙ ENDPOINT СОХРАНЕНИЯ ОТВЕТОВ
+@app.post("/api/users/answers/{day}/{task_index}")
+def save_user_answer(day: int, task_index: int, answer_data: AnswerCreate,
+                    current_user: User = Depends(get_current_user), 
+                    db: Session = Depends(get_db)):
+    try:
+        logger.info(f"💾 Сохранение ответа: день {day}, задание {task_index}")
+        logger.info(f"📥 Ответ: {answer_data.answer}, правильно: {answer_data.is_correct}")
+        
+        current_version = crud.get_current_task_version(db, current_user.id)
+        logger.info(f"🔍 Текущая версия заданий: {current_version}")
+        
+        if not current_version:
+            logger.error("❌ Не найдена текущая версия заданий")
+            raise HTTPException(status_code=400, detail="No task version found")
+        
+        result = crud.save_user_answer(
+            db, current_user.id, day, task_index, 
+            answer_data.answer, answer_data.is_correct, current_version.id
+        )
+        
+        logger.info(f"✅ Ответ успешно сохранен: {result}")
+        return {"status": "success", "day": day, "task_index": task_index}
+        
+    except Exception as e:
+        logger.error(f"❌ Ошибка сохранения ответа: {e}")
+        import traceback
+        logger.error(f"❌ Traceback: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail="Failed to save answer")
+
+@app.get("/api/users/answers")
+def get_user_answers(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    try:
+        current_version = crud.get_current_task_version(db, current_user.id)
+        version_id = current_version.id if current_version else None
+        answers = crud.get_user_answers(db, current_user.id, version_id)
+        return answers
+    except Exception as e:
+        logger.error(f"Ошибка получения ответов: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get answers")
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=4000)

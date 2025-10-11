@@ -1,0 +1,72 @@
+# /opt/math-app/docker-compose.yml
+version: '3.8'
+
+services:
+  math-db:
+    image: postgres:16
+    container_name: math-db
+    environment:
+      - POSTGRES_DB=mathdb
+      - POSTGRES_USER=mathuser
+      - POSTGRES_PASSWORD=mathpass
+    volumes:
+      - math-db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mathuser -d mathdb"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - math-network
+
+  math-backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile_minimal
+    container_name: math-backend
+    ports:
+      - "4000:4000"
+    environment:
+      - DATABASE_URL=postgresql://mathuser:mathpass@math-db:5432/mathdb
+      - SECRET_KEY=your-secret-key-here
+      - PORT=4000
+    volumes:
+      - ./backend:/app
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      math-db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - math-network
+
+  math-frontend:
+    build: ./frontend
+    container_name: math-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:4000/api
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - math-backend
+    restart: unless-stopped
+    networks:
+      - math-network
+
+networks:
+  math-network:
+    driver: bridge
+
+volumes:
+  math-db-data:

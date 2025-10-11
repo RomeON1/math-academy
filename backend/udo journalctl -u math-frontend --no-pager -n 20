@@ -1,0 +1,29 @@
+[0;1;32m●[0m math-backend.service - Math Academy Backend
+     Loaded: loaded (]8;;file://stoic-carson.217-160-126-178.plesk.page/etc/systemd/system/math-backend.service/etc/systemd/system/math-backend.service]8;;; [0;1;32menabled[0m; preset: [0;1;32menabled[0m)
+     Active: [0;1;32mactive (running)[0m since Wed 2025-10-01 08:28:30 UTC; 51min ago
+   Main PID: 322061 (python)
+      Tasks: 6 (limit: 4598)
+     Memory: 46.2M (peak: 46.7M)
+        CPU: 3.914s
+     CGroup: /system.slice/math-backend.service
+             └─[0;38;5;245m322061 /opt/math-app/backend/venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8001[0m
+
+Oct 01 08:28:30 stoic-carson.217-160-126-178.plesk.page python[322061]: 2025-10-01 08:28:30,521 INFO sqlalchemy.engine.Engine select relname from pg_class c join pg_namespace n on n.oid=c.relnamespace where pg_catalog.pg_table_is_visible(c.oid) and relname=%(name)s
+Oct 01 08:28:30 stoic-carson.217-160-126-178.plesk.page python[322061]: 2025-10-01 08:28:30,521 INFO sqlalchemy.engine.Engine [cached since 0.002259s ago] {'name': 'useranswer'}
+Oct 01 08:28:30 stoic-carson.217-160-126-178.plesk.page python[322061]: 2025-10-01 08:28:30,521 INFO sqlalchemy.engine.Engine COMMIT
+Oct 01 08:28:30 stoic-carson.217-160-126-178.plesk.page python[322061]: INFO:     Application startup complete.
+Oct 01 08:28:30 stoic-carson.217-160-126-178.plesk.page python[322061]: INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+Oct 01 08:29:27 stoic-carson.217-160-126-178.plesk.page python[322061]: INFO:     31.16.248.78:20711 - "GET / HTTP/1.1" 404 Not Found
+Oct 01 08:29:27 stoic-carson.217-160-126-178.plesk.page python[322061]: INFO:     31.16.248.78:20720 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+Oct 01 08:31:46 stoic-carson.217-160-126-178.plesk.page python[322061]: INFO:     31.16.248.78:20722 - "GET / HTTP/1.1" 404 Not Found
+Oct 01 09:07:46 stoic-carson.217-160-126-178.plesk.page python[322061]: WARNING:  Invalid HTTP request received.
+Oct 01 09:07:47 stoic-carson.217-160-126-178.plesk.page python[322061]: WARNING:  Invalid HTTP request received.
+
+● math-frontend.service - Math Academy Frontend
+     Loaded: loaded (]8;;file://stoic-carson.217-160-126-178.plesk.page/etc/systemd/system/math-frontend.service/etc/systemd/system/math-frontend.service]8;;; [0;1;32menabled[0m; preset: [0;1;32menabled[0m)
+     Active: activating (auto-restart) (Result: exit-code) since Wed 2025-10-01 09:20:02 UTC; 63ms ago
+    Process: 354844 ExecStart=/usr/bin/npm start [0;1;31m(code=exited, status=1/FAILURE)[0m
+   Main PID: 354844 (code=exited, status=1/FAILURE)
+        CPU: 2.779s
+
+Oct 01 09:20:02 stoic-carson.217-160-126-178.plesk.page systemd[1]: math-frontend.service: Consumed 2.779s CPU time.

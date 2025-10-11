@@ -1,0 +1,176 @@
+/* ===== MOBILE FIRST FIXES ===== */
+@media (max-width: 768px) {
+  /* Контейнеры и layout */
+  .container {
+    max-width: 100% !important;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+  
+  /* Карточки дней - компактные */
+  .bg-white.rounded-xl, .dark .dark\\:bg-gray-800.rounded-xl {
+    padding: 12px !important;
+    margin: 0 0 16px 0 !important;
+  }
+  
+  /* Задания - вертикальное расположение */
+  .flex.items-center.space-x-3 {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    align-items: stretch !important;
+  }
+  
+  .flex.items-center.space-x-3 > .flex-1 {
+    text-align: center !important;
+    /* order: 1 !important; */  {/* ← ЗАКОММЕНТИРУЙ ЭТУ СТРОКУ */}
+  }
+  
+  .flex.items-center.space-x-3 input {
+    /* order: 2 !important; */  {/* ← ЗАКОММЕНТИРУЙ ЭТУ СТРОКУ */}
+    width: 100% !important;
+    max-width: 140px !important;
+    margin: 0 auto !important;
+  }
+  
+  .flex.items-center.space-x-3 > .text-xl {
+    /* order: 3 !important; */  {/* ← ЗАКОММЕНТИРУЙ ЭТУ СТРОКУ */}
+    margin-top: 4px !important;
+  }
+  
+  /* Хедер - исправляем распадение */
+  .md\\:hidden.flex.items-center.justify-between {
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    padding: 8px 12px !important;
+  }
+  
+  .md\\:hidden .flex-1 {
+    flex: 1 1 60% !important;
+    min-width: 0 !important;
+  }
+  
+  .md\\:hidden .flex.items-center.space-x-2 {
+    flex: 1 1 35% !important;
+    justify-content: flex-end !important;
+  }
+  
+  /* Улучшаем читаемость */
+  .text-gray-800, .dark .dark\\:text-gray-200 {
+    font-size: 14px !important;
+    line-height: 1.4 !important;
+  }
+  
+  .text-gray-800 strong, .dark .dark\\:text-gray-200 strong {
+    display: block !important;
+    margin-bottom: 4px !important;
+    font-size: 13px !important;
+  }
+  
+  /* Поля ввода - улучшенные */
+  input[type="text"] {
+    border: 2px solid #e5e7eb !important;
+    border-radius: 8px !important;
+    padding: 10px 12px !important;
+    font-size: 16px !important;
+  }
+  
+  .dark input[type="text"] {
+    border-color: #4b5563 !important;
+  }
+  
+  input[type="text"]:focus {
+    border-color: #3b82f6 !important;
+    outline: none !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+  }
+
+  /* ФИКС: Статус не смещает поле ввода */
+  .flex.items-center.space-x-3 .flex.items-center.space-x-2 {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 10px !important;
+    width: auto !important;
+    min-width: 140px !important; /* Фиксированная минимальная ширина */
+    margin: 8px auto 0 auto !important;
+    position: relative !important;
+  }
+
+  /* Делаем поле ввода фиксированной ширины */
+  .flex.items-center.space-x-3 input {
+    width: 120px !important; /* Фиксированная ширина */
+    max-width: 120px !important;
+    margin: 0 auto !important;
+    flex-shrink: 0 !important; /* Запрещаем сжатие */
+  }
+
+  /* Статус позиционируем абсолютно справа от поля */
+  .flex.items-center.space-x-3 .text-xl {
+    position: absolute !important;
+    left: calc(100% + 10px) !important; /* 10px справа от поля */
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    margin: 0 !important;
+  }
+  /* Центрируем подсказку о формате ответа */
+  .flex.items-center.space-x-3 + .text-xs.text-gray-500,
+  .flex.items-center.space-x-3 ~ .text-xs.text-gray-500 {
+    text-align: center !important;
+    display: block !important;
+    width: 100% !important;
+    margin: 4px auto 0 auto !important;
+    padding: 0 10px !important;
+  }
+
+  /* Адаптация новой структуры заголовка для мобилок */
+  .flex.justify-between.items-start.mb-4 {
+    flex-direction: row !important;
+    align-items: flex-start !important;
+  }
+  
+  .flex.justify-between.items-start.mb-4 .flex-1 {
+    text-align: left !important;
+  }
+  
+  .flex.justify-between.items-start.mb-4 .flex-col.items-end {
+    align-items: flex-end !important;
+    text-align: right !important;
+  }
+  
+  .text-xl.font-bold.text-gray-900.dark\\:text-white {
+    font-size: 18px !important;
+    margin-bottom: 2px !important;
+  }
+  
+  .text-lg.text-gray-800.dark\\:text-gray-200.font-medium {
+    font-size: 14px !important;
+  }
+  
+  .flex.items-center.space-x-2 {
+    justify-content: flex-end !important;
+  }
+  
+  .text-sm.text-gray-500.dark\\:text-gray-400 {
+    font-size: 12px !important;
+  }
+
+}
+
+/* Очень маленькие экраны */
+@media (max-width: 400px) {
+    .md\\:hidden .flex-1 {
+    flex-basis: 100% !important;
+  }
+  
+  .md\\:hidden .flex.items-center.space-x-2 {
+    flex-basis: 100% !important;
+    justify-content: space-between !important;
+  }
+  
+  .text-gray-800, .dark .dark\\:text-gray-200 {
+    font-size: 13px !important;
+  }
+}
+

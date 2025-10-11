@@ -1,0 +1,33 @@
+# Environment
+.env
+.env.local
+.env.production
+
+# Database  
+*.db
+*.sqlite3
+
+# Docker
+docker-compose.override.yml
+
+# Logs
+*.log
+logs/
+
+# Build
+frontend/build/
+backend/__pycache__/
+*.pyc
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Backups
+backup_*.sql
