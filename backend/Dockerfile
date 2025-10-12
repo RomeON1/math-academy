@@ -14,7 +14,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Копируем app в корень WORKDIR
 COPY app/ ./
 COPY migrations/ ./migrations/
-COPY taskGenerators.py .
 
 RUN mkdir -p migrations/versions
 

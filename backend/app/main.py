@@ -4,10 +4,11 @@ from sqlalchemy.orm import Session
 import logging
 import json
 from typing import List
+from datetime import datetime
 
 from database import engine, get_db
 import models
-from models import User
+from models import User, UserGradeHistory
 import schemas
 from schemas import UserCreate, UserLogin, TaskResponse, AnswerCreate, ProgressUpdate, TaskCreate
 from auth import get_current_user, create_access_token, get_password_hash, verify_password
@@ -64,6 +65,16 @@ async def health_check():
 def register(user_data: UserCreate, db: Session = Depends(get_db)):
     try:
         user = crud.create_user(db, user_data)
+        
+        # Добавляем запись в историю классов
+        grade_history = UserGradeHistory(
+            user_id=user.id,
+            grade=user.grade,
+            start_date=user.created_at
+        )
+        db.add(grade_history)
+        db.commit()
+        
         access_token = create_access_token(data={"sub": str(user.id)})
         return {
             "access_token": access_token,
@@ -233,6 +244,56 @@ def get_user_answers(current_user: User = Depends(get_current_user), db: Session
     except Exception as e:
         logger.error(f"Ошибка получения ответов: {e}")
         raise HTTPException(status_code=500, detail="Failed to get answers")
+
+# Endpoints для управления классами
+@app.get("/api/grades")
+async def get_available_grades():
+    """Получить список доступных классов (1-11)"""
+    return {"grades": list(range(1, 12))}
+
+@app.post("/api/users/{user_id}/grade")
+async def update_user_grade(
+    user_id: int,
+    new_grade: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Обновить класс пользователя"""
+    if current_user.id != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    if new_grade < 1 or new_grade > 11:
+        raise HTTPException(status_code=400, detail="Grade must be between 1 and 11")
+    
+    # Обновляем текущий класс
+    current_user.grade = new_grade
+    
+    # Добавляем запись в историю
+    grade_history = UserGradeHistory(
+        user_id=user_id,
+        grade=new_grade,
+        start_date=datetime.utcnow()
+    )
+    db.add(grade_history)
+    db.commit()
+    
+    return {"message": "Grade updated successfully", "new_grade": new_grade}
+
+@app.get("/api/users/{user_id}/grade-history")
+async def get_user_grade_history(
+    user_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Получить историю классов пользователя"""
+    if current_user.id != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    history = db.query(UserGradeHistory).filter(
+        UserGradeHistory.user_id == user_id
+    ).order_by(UserGradeHistory.start_date.desc()).all()
+    
+    return history
 
 if __name__ == "__main__":
     import uvicorn

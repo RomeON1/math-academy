@@ -21,6 +21,7 @@ class User(Base):
     tasks = relationship("UserTask", back_populates="user")
     progress = relationship("UserProgress", back_populates="user")
     task_versions = relationship("TaskVersion", back_populates="user")
+    grade_history = relationship("UserGradeHistory", back_populates="user")
 
 class TaskVersion(Base):
     __tablename__ = "task_versions"
@@ -81,3 +82,15 @@ class UserProgress(Base):
     
     # Relationships
     user = relationship("User", back_populates="progress")
+
+class UserGradeHistory(Base):
+    __tablename__ = "user_grade_history"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    grade = Column(Integer)
+    start_date = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    user = relationship("User", back_populates="grade_history")
