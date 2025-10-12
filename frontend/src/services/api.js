@@ -128,4 +128,29 @@ export const userAPI = {
     }),
 };
 
+// Методы для работы с классами
+export const gradeAPI = {
+  // Получить список доступных классов
+  getAvailableGrades: () => {
+    return api.get('/grades');
+  },
+
+  // Обновить класс пользователя
+  updateUserGrade: (userId, newGrade) => {
+    return api.post(`/users/${userId}/grade`, null, {
+      params: { new_grade: newGrade }
+    });
+  },
+
+  // Получить историю классов пользователя
+  getGradeHistory: (userId) => {
+    return api.get(`/users/${userId}/grade-history`);
+  }
+};
+
+// Добавляем методы в courseAPI для обратной совместимости
+courseAPI.updateUserGrade = gradeAPI.updateUserGrade;
+courseAPI.getGradeHistory = gradeAPI.getGradeHistory;
+courseAPI.getAvailableGrades = gradeAPI.getAvailableGrades;
+
 export default api;
