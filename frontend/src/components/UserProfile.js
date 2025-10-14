@@ -46,8 +46,8 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
     { value: 'биология', label: t('profile.subjects.biology') },
     { value: 'русский язык', label: t('profile.subjects.russian') },
     { value: 'немецкий язык', label: t('profile.subjects.german') },
-    { value: 'информатика', label: t('profile.subjects.computer_science') },
-    { value: 'английский язык', label: t('profile.subjects.english') }
+    { value: 'английский язык', label: t('profile.subjects.english') },
+    { value: 'информатика', label: t('profile.subjects.computer_science') }
   ];
 
   useEffect(() => {
@@ -157,13 +157,13 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
     
     try {
       await courseAPI.updateUserSubject(user.id, currentSubject);
-      setMessage('Предмет успешно изменен!');
+      setMessage(t('profile.subjectUpdated'));
       if (onSubjectChange) {
         onSubjectChange(currentSubject);
       }
       await fetchSubjectHistory();
     } catch (error) {
-      setMessage('Ошибка изменения предмета');
+      setMessage(t('profile.updateError'));
       console.error('Error updating subject:', error);
     } finally {
       setLoading(false);
@@ -227,9 +227,9 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
         custom_subject: ''
       });
       
-      setMessage('Преподаватель успешно добавлен!');
+      setMessage(t('profile.teacherAdded'));
     } catch (error) {
-      setMessage('Ошибка добавления преподавателя');
+      setMessage(t('profile.teacherAddError'));
       console.error('Error adding teacher:', error);
     } finally {
       setLoading(false);
@@ -247,9 +247,9 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
         teachers: prev.teachers.filter(teacher => teacher.id !== teacherId)
       }));
       
-      setMessage('Преподаватель успешно удален!');
+      setMessage(t('profile.teacherRemoved'));
     } catch (error) {
-      setMessage('Ошибка удаления преподавателя');
+      setMessage(t('profile.teacherRemoveError'));
       console.error('Error removing teacher:', error);
     } finally {
       setLoading(false);
@@ -259,7 +259,7 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
   const handleSaveProfile = async () => {
     // Проверка валидации перед сохранением
     if (errors.age || errors.real_grade) {
-      setMessage('Исправьте ошибки в форме перед сохранением');
+      setMessage(t('profile.fixErrors'));
       return;
     }
 
@@ -278,9 +278,9 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
       };
 
       await courseAPI.updateUserProfile(user.id, profileUpdateData);
-      setMessage('Профиль успешно сохранен!');
+      setMessage(t('profile.profileSaved'));
     } catch (error) {
-      setMessage('Ошибка сохранения профиля');
+      setMessage(t('profile.profileSaveError'));
       console.error('Error saving profile:', error);
     } finally {
       setLoading(false);
@@ -319,13 +319,13 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
         {/* Родитель/опекун */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            {t('profile.parentName')} (опционально)
+            {t('profile.parentName')} {t('profile.optional')}
           </label>
           <input
             type="text"
             value={profileData.parent_name}
             onChange={(e) => handleProfileFieldChange('parent_name', e.target.value)}
-            placeholder="ФИО родителя или опекуна"
+            placeholder={t('profile.parentNamePlaceholder')}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             disabled={loading}
           />
@@ -334,7 +334,7 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
         {/* Email родителя/опекуна */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            {t('profile.parentEmail')} (опционально)
+            {t('profile.parentEmail')} {t('profile.optional')}
           </label>
           <input
             type="email"
@@ -349,7 +349,7 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
         {/* Возраст */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            {t('profile.age')} (опционально)
+            {t('profile.age')} {t('profile.optional')}
           </label>
           <input
             type="number"
@@ -357,7 +357,7 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
             max="90"
             value={profileData.age}
             onChange={(e) => handleProfileFieldChange('age', e.target.value)}
-            placeholder="От 5 до 90 лет"
+            placeholder={t('profile.agePlaceholder')}
             className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
               errors.age 
                 ? 'border-red-500 dark:border-red-400' 
@@ -373,13 +373,13 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
         {/* Город/регион */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            {t('profile.city')} (опционально)
+            {t('profile.city')} {t('profile.optional')}
           </label>
           <input
             type="text"
             value={profileData.city}
             onChange={(e) => handleProfileFieldChange('city', e.target.value)}
-            placeholder="Город, регион, страна"
+            placeholder={t('profile.cityPlaceholder')}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             disabled={loading}
           />
@@ -388,13 +388,13 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
         {/* Школа */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            {t('profile.school')} (опционально)
+            {t('profile.school')} {t('profile.optional')}
           </label>
           <input
             type="text"
             value={profileData.school}
             onChange={(e) => handleProfileFieldChange('school', e.target.value)}
-            placeholder="Название школы"
+            placeholder={t('profile.schoolPlaceholder')}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             disabled={loading}
           />
@@ -403,7 +403,7 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
         {/* Реальный класс в школе */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            {t('profile.realGrade')} (опционально)
+            {t('profile.realGrade')} {t('profile.optional')}
           </label>
           <input
             type="number"
@@ -411,7 +411,7 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
             max="11"
             value={profileData.real_grade}
             onChange={(e) => handleProfileFieldChange('real_grade', e.target.value)}
-            placeholder="От 1 до 11 класса"
+            placeholder={t('profile.realGradePlaceholder')}
             className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
               errors.real_grade 
                 ? 'border-red-500 dark:border-red-400' 
@@ -500,7 +500,7 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
         <div>
           <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600 h-full">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-              Текущий предмет изучения
+              {t('profile.currentSubject')}
             </label>
             <div className="flex flex-col gap-3 mb-4">
               <select
@@ -521,7 +521,7 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
                 disabled={loading || currentSubject === user.current_subject}
                 className="w-full px-4 py-2 bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white rounded-lg font-medium transition-colors"
               >
-                {loading ? 'Изменение...' : 'Сменить предмет'}
+                {loading ? t('profile.changing') : t('profile.changeSubject')}
               </button>
             </div>
             
@@ -534,7 +534,7 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
                   className="w-full text-left flex justify-between items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors"
                 >
                   <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                    История предметов
+                    {t('profile.subjectHistory')}
                   </span>
                   <svg
                     className={`w-4 h-4 text-gray-500 transform transition-transform ${
@@ -577,7 +577,7 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
               className="w-full px-4 py-3 text-left flex justify-between items-center hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
             >
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                {t('profile.teachers')} (опционально)
+                {t('profile.teachers')} {t('profile.optional')}
               </span>
               <svg
                 className={`w-5 h-5 text-gray-500 transform transition-transform ${
@@ -611,7 +611,7 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
                           onClick={() => handleRemoveTeacher(teacher.id)}
                           disabled={loading}
                           className="text-red-500 hover:text-red-700 disabled:text-red-300 text-sm p-1"
-                          title="Удалить преподавателя"
+                          title={t('profile.removeTeacher')}
                         >
                           ❌
                         </button>
@@ -632,7 +632,7 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
                         type="text"
                         value={newTeacher.teacher_name}
                         onChange={(e) => handleTeacherFieldChange('teacher_name', e.target.value)}
-                        placeholder="ФИО преподавателя"
+                        placeholder={t('profile.teacherNamePlaceholder')}
                         className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                         disabled={loading}
                       />
@@ -671,7 +671,7 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
                           type="text"
                           value={newTeacher.custom_subject}
                           onChange={(e) => handleTeacherFieldChange('custom_subject', e.target.value)}
-                          placeholder="Название предмета"
+                          placeholder={t('profile.customSubjectPlaceholder')}
                           className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                           disabled={loading}
                         />
@@ -684,7 +684,7 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
                     disabled={loading || !newTeacher.teacher_name.trim()}
                     className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white rounded text-sm font-medium transition-colors"
                   >
-                    {loading ? 'Добавление...' : t('profile.addTeacher')}
+                    {loading ? t('profile.adding') : t('profile.addTeacher')}
                   </button>
                 </div>
               </div>
@@ -700,7 +700,7 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
           disabled={loading || errors.age || errors.real_grade}
           className="px-6 py-2 bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white rounded-lg font-medium transition-colors"
         >
-          {loading ? 'Сохранение...' : 'Сохранить профиль'}
+          {loading ? t('profile.saving') : t('profile.saveProfile')}
         </button>
       </div>
     </div>
@@ -720,13 +720,13 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
     return subjectMap[subject] || 'other';
   };
 
-  // Остальные разделы без изменений
+  // Остальные разделы с переводами
   const renderProgressSection = () => (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">📊 Прогресс и статистика</h2>
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t('profile.sections.progress')}</h2>
       <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
         <p className="text-yellow-800 dark:text-yellow-200">
-          Раздел в разработке. Скоро здесь появятся графики и детальная статистика!
+          {t('profile.sections.progressDevelopment')}
         </p>
       </div>
     </div>
@@ -734,10 +734,10 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
 
   const renderAchievementsSection = () => (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">🏆 Достижения</h2>
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t('profile.sections.achievements')}</h2>
       <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
         <p className="text-yellow-800 dark:text-yellow-200">
-          Система достижений и наград появится в следующем обновлении!
+          {t('profile.sections.achievementsDevelopment')}
         </p>
       </div>
     </div>
@@ -745,10 +745,10 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
 
   const renderSettingsSection = () => (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">⚙️ Настройки обучения</h2>
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t('profile.sections.settings')}</h2>
       <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
         <p className="text-yellow-800 dark:text-yellow-200">
-          Настройки появятся здесь скоро!
+          {t('profile.sections.settingsDevelopment')}
         </p>
       </div>
     </div>
@@ -756,10 +756,10 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
 
   const renderCalendarSection = () => (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">📅 Календарь</h2>
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t('profile.sections.calendar')}</h2>
       <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
         <p className="text-yellow-800 dark:text-yellow-200">
-          Календарь обучения будет добавлен в ближайшее время!
+          {t('profile.sections.calendarDevelopment')}
         </p>
       </div>
     </div>
@@ -787,11 +787,11 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
             </h3>
             <nav className="space-y-2">
               {[
-                { id: 'profile', label: '👤 Профиль' },
-                { id: 'progress', label: '📊 Прогресс' },
-                { id: 'achievements', label: '🏆 Достижения' },
-                { id: 'settings', label: '⚙️ Настройки' },
-                { id: 'calendar', label: '📅 Календарь' }
+                { id: 'profile', label: t('profile.sections.profile') },
+                { id: 'progress', label: t('profile.sections.progress') },
+                { id: 'achievements', label: t('profile.sections.achievements') },
+                { id: 'settings', label: t('profile.sections.settings') },
+                { id: 'calendar', label: t('profile.sections.calendar') }
               ].map((item) => (
                 <button
                   key={item.id}
@@ -812,7 +812,7 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
             onClick={onClose}
             className="w-full p-3 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors border-t border-gray-200 dark:border-gray-600 mt-4"
           >
-            ← Закрыть
+            ← {t('profile.close')}
           </button>
         </div>
 

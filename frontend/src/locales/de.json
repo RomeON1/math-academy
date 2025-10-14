@@ -433,8 +433,30 @@
     "teacherName": "Name des Lehrers",
     "subject": "Fach",
     "customSubject": "Anderes Fach",
+    "currentSubject": "Aktuelles Studienfach",
+    "changeSubject": "Fach wechseln",
+    "subjectHistory": "Fachverlauf",
+    "changing": "Ändern...",
+    "subjectUpdated": "Fach erfolgreich geändert!",
+    "saveProfile": "Profil speichern",
+    "close": "Schließen",
+    "optional": "(optional)",
+    "sections": {
+      "profile": "👤 Profil",
+      "progress": "📊 Fortschritt und Statistik",
+      "achievements": "🏆 Erfolge",
+      "settings": "⚙️ Lerneinstellungen",
+      "calendar": "📅 Kalender",
+      "progressDevelopment": "Bereich in Entwicklung. Bald erscheinen hier Diagramme und detaillierte Statistiken!",
+      "achievementsDevelopment": "Das System der Erfolge und Auszeichnungen erscheint im nächsten Update!",
+      "settingsDevelopment": "Einstellungen erscheinen hier bald!",
+      "calendarDevelopment": "Der Lernkalender wird in Kürze hinzugefügt!"
+    },
     "addTeacher": "Lehrer hinzufügen",
     "removeTeacher": "Entfernen",
+    "currentSubject": "Aktuelles Studienfach",
+    "changeSubject": "Fach wechseln",
+    "subjectHistory": "Fachverlauf",
     "subjects": {
       "mathematics": "Mathematik",
       "physics": "Physik",
@@ -442,7 +464,24 @@
       "biology": "Biologie",
       "russian": "Russisch",
       "german": "Deutsch",
+      "english": "Englisch",
+      "computer_science": "Informatik",
       "other": "Andere"
     }
+  },
+  "currentSubject": "Aktuelles Studienfach",
+  "subjectHistory": "Fachverlauf",
+  "changeSubject": "Fach wechseln",
+  "changing": "Ändern...",
+  "subjectUpdated": "Fach erfolgreich geändert!",
+  "updateError": "Fehler beim Ändern des Fachs",
+  "subjects": {
+    "mathematics": "Mathematik",
+    "physics": "Physik",
+    "chemistry": "Chemie", 
+    "biology": "Biologie",
+    "russian": "Russisch",
+    "german": "Deutsch",
+    "other": "Andere"
   }
 }
