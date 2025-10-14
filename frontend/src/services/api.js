@@ -148,9 +148,75 @@ export const gradeAPI = {
   }
 };
 
+// Методы для работы с предметами
+export const subjectAPI = {
+  // Получить список доступных предметов
+  getAvailableSubjects: () => {
+    return api.get('/subjects');
+  },
+
+  // Обновить предмет пользователя
+  updateUserSubject: (userId, newSubject) => {
+    return api.post(`/users/${userId}/subject`, null, {
+      params: { new_subject: newSubject }
+    });
+  },
+
+  // Получить историю предметов пользователя
+  getSubjectHistory: (userId) => {
+    return api.get(`/users/${userId}/subject-history`);
+  }
+};
+
+// НОВЫЕ МЕТОДЫ ДЛЯ ПРОФИЛЯ И ПРЕПОДАВАТЕЛЕЙ
+export const profileAPI = {
+  // Получить профиль пользователя
+  getUserProfile: (userId) => {
+    return api.get(`/users/${userId}/profile`);
+  },
+
+  // Обновить профиль пользователя
+  updateUserProfile: (userId, profileData) => {
+    return api.put(`/users/${userId}/profile`, profileData);
+  },
+
+  // Получить список преподавателей пользователя
+  getUserTeachers: (userId) => {
+    return api.get(`/users/${userId}/teachers`);
+  },
+
+  // Добавить преподавателя
+  addUserTeacher: (userId, teacherData) => {
+    return api.post(`/users/${userId}/teachers`, teacherData);
+  },
+
+  // Удалить преподавателя
+  removeUserTeacher: (userId, teacherId) => {
+    return api.delete(`/users/${userId}/teachers/${teacherId}`);
+  },
+
+  // Обновить список преподавателей
+  updateUserTeachers: (userId, teachersData) => {
+    return api.put(`/users/${userId}/teachers`, teachersData);
+  }
+};
+
 // Добавляем методы в courseAPI для обратной совместимости
 courseAPI.updateUserGrade = gradeAPI.updateUserGrade;
 courseAPI.getGradeHistory = gradeAPI.getGradeHistory;
 courseAPI.getAvailableGrades = gradeAPI.getAvailableGrades;
+
+// Добавляем методы предметов в courseAPI для обратной совместимости
+courseAPI.updateUserSubject = subjectAPI.updateUserSubject;
+courseAPI.getSubjectHistory = subjectAPI.getSubjectHistory;
+courseAPI.getAvailableSubjects = subjectAPI.getAvailableSubjects;
+
+// Добавляем методы профиля в courseAPI
+courseAPI.getUserProfile = profileAPI.getUserProfile;
+courseAPI.updateUserProfile = profileAPI.updateUserProfile;
+courseAPI.getUserTeachers = profileAPI.getUserTeachers;
+courseAPI.addUserTeacher = profileAPI.addUserTeacher;
+courseAPI.removeUserTeacher = profileAPI.removeUserTeacher;
+courseAPI.updateUserTeachers = profileAPI.updateUserTeachers;
 
 export default api;

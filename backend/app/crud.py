@@ -13,11 +13,35 @@ def create_user(db: Session, user_data: schemas.UserCreate):
         email=user_data.email,
         username=user_data.username,
         hashed_password=hashed_password,
-        grade=user_data.grade
+        grade=user_data.grade,
+        current_subject=user_data.current_subject,
+        parent_name=user_data.parent_name,
+        parent_email=user_data.parent_email,
+        age=user_data.age,
+        school=user_data.school,
+        real_grade=user_data.real_grade,
+        city=user_data.city
     )
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
+    
+    # Добавляем запись в историю классов
+    grade_history = models.UserGradeHistory(
+        user_id=db_user.id,
+        grade=db_user.grade,
+        start_date=db_user.created_at
+    )
+    db.add(grade_history)
+    
+    # Добавляем запись в историю предметов
+    subject_history = models.UserSubjectHistory(
+        user_id=db_user.id,
+        subject=db_user.current_subject
+    )
+    db.add(subject_history)
+    
+    db.commit()
     return db_user
 
 def get_user_by_email(db: Session, email: str):
@@ -25,6 +49,44 @@ def get_user_by_email(db: Session, email: str):
 
 def get_user_by_id(db: Session, user_id: int):
     return db.query(models.User).filter(models.User.id == user_id).first()
+
+def update_user_profile(db: Session, user_id: int, profile_data: dict):
+    """Обновление профиля пользователя"""
+    user = get_user_by_id(db, user_id)
+    if not user:
+        return None
+    
+    for field, value in profile_data.items():
+        if hasattr(user, field):
+            setattr(user, field, value)
+    
+    db.commit()
+    db.refresh(user)
+    return user
+
+def update_user_subject(db: Session, user_id: int, new_subject: str):
+    """Обновить предмет пользователя"""
+    user = get_user_by_id(db, user_id)
+    if not user:
+        return None
+    
+    user.current_subject = new_subject
+    
+    # Добавляем запись в историю
+    subject_history = models.UserSubjectHistory(
+        user_id=user_id,
+        subject=new_subject
+    )
+    db.add(subject_history)
+    db.commit()
+    db.refresh(user)
+    return user
+
+def get_user_subject_history(db: Session, user_id: int):
+    """Получить историю предметов пользователя"""
+    return db.query(models.UserSubjectHistory).filter(
+        models.UserSubjectHistory.user_id == user_id
+    ).order_by(models.UserSubjectHistory.start_date.desc()).all()
 
 def authenticate_user(db: Session, email: str, password: str):
     user = get_user_by_email(db, email)
@@ -283,3 +345,58 @@ def reset_user_progress(db: Session, user_id: int):
     db.commit()
     
     return {"status": "success", "message": "Progress reset successfully"}
+
+# Новые функции для работы с преподавателями
+def get_user_teachers(db: Session, user_id: int):
+    """Получить список преподавателей пользователя"""
+    return db.query(models.UserTeacher).filter(
+        models.UserTeacher.user_id == user_id
+    ).order_by(models.UserTeacher.created_at.desc()).all()
+
+def add_user_teacher(db: Session, user_id: int, teacher_data: schemas.TeacherCreate):
+    """Добавить преподавателя пользователю"""
+    teacher = models.UserTeacher(
+        user_id=user_id,
+        teacher_name=teacher_data.teacher_name,
+        subject=teacher_data.subject,
+        custom_subject=teacher_data.custom_subject
+    )
+    db.add(teacher)
+    db.commit()
+    db.refresh(teacher)
+    return teacher
+
+def remove_user_teacher(db: Session, teacher_id: int, user_id: int):
+    """Удалить преподавателя пользователя"""
+    teacher = db.query(models.UserTeacher).filter(
+        and_(
+            models.UserTeacher.id == teacher_id,
+            models.UserTeacher.user_id == user_id
+        )
+    ).first()
+    
+    if teacher:
+        db.delete(teacher)
+        db.commit()
+        return True
+    return False
+
+def update_user_teachers(db: Session, user_id: int, teachers_data: list):
+    """Обновить список преподавателей пользователя"""
+    # Удаляем старых преподавателей
+    db.query(models.UserTeacher).filter(
+        models.UserTeacher.user_id == user_id
+    ).delete()
+    
+    # Добавляем новых
+    for teacher_data in teachers_data:
+        teacher = models.UserTeacher(
+            user_id=user_id,
+            teacher_name=teacher_data['teacher_name'],
+            subject=teacher_data['subject'],
+            custom_subject=teacher_data.get('custom_subject')
+        )
+        db.add(teacher)
+    
+    db.commit()
+    return True

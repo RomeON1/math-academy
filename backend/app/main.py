@@ -8,9 +8,9 @@ from datetime import datetime
 
 from database import engine, get_db
 import models
-from models import User, UserGradeHistory
+from models import User, UserGradeHistory, UserTeacher, UserSubjectHistory
 import schemas
-from schemas import UserCreate, UserLogin, TaskResponse, AnswerCreate, ProgressUpdate, TaskCreate
+from schemas import UserCreate, UserLogin, TaskResponse, AnswerCreate, ProgressUpdate, TaskCreate, TeacherCreate, TeacherResponse, UserProfileUpdate
 from auth import get_current_user, create_access_token, get_password_hash, verify_password
 import crud
 from config import settings
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Math Academy API", version="1.0.0")
+app = FastAPI(title="Math Academy API", version="1.1.0")
 
 # Middleware для логирования запросов
 @app.middleware("http")
@@ -66,15 +66,6 @@ def register(user_data: UserCreate, db: Session = Depends(get_db)):
     try:
         user = crud.create_user(db, user_data)
         
-        # Добавляем запись в историю классов
-        grade_history = UserGradeHistory(
-            user_id=user.id,
-            grade=user.grade,
-            start_date=user.created_at
-        )
-        db.add(grade_history)
-        db.commit()
-        
         access_token = create_access_token(data={"sub": str(user.id)})
         return {
             "access_token": access_token,
@@ -114,6 +105,13 @@ def get_current_user_info(current_user: User = Depends(get_current_user)):
         "email": current_user.email,
         "username": current_user.username,
         "grade": current_user.grade,
+        "current_subject": current_user.current_subject,
+        "parent_name": current_user.parent_name,
+        "parent_email": current_user.parent_email,
+        "age": current_user.age,
+        "school": current_user.school,
+        "real_grade": current_user.real_grade,
+        "city": current_user.city,
         "is_active": True
     }
 
@@ -294,6 +292,166 @@ async def get_user_grade_history(
     ).order_by(UserGradeHistory.start_date.desc()).all()
     
     return history
+
+# НОВЫЕ ENDPOINTS ДЛЯ ПРЕДМЕТОВ
+@app.get("/api/subjects")
+async def get_available_subjects():
+    """Получить список доступных предметов"""
+    subjects = [
+        "математика", "физика", "химия", "биология", 
+        "русский язык", "немецкий язык", "английский язык", "информатика"
+    ]
+    return {"subjects": subjects}
+
+@app.post("/api/users/{user_id}/subject")
+async def update_user_subject(
+    user_id: int,
+    new_subject: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Обновить предмет пользователя"""
+    if current_user.id != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    available_subjects = ["математика", "физика", "химия", "биология", 
+                         "русский язык", "немецкий язык", "английский язык", "информатика"]
+    
+    if new_subject not in available_subjects:
+        raise HTTPException(status_code=400, detail="Invalid subject")
+    
+    user = crud.update_user_subject(db, user_id, new_subject)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return {"message": "Subject updated successfully", "new_subject": new_subject}
+
+@app.get("/api/users/{user_id}/subject-history")
+async def get_user_subject_history(
+    user_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Получить историю предметов пользователя"""
+    if current_user.id != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    history = crud.get_user_subject_history(db, user_id)
+    return history
+
+# НОВЫЕ ENDPOINTS ДЛЯ ПРОФИЛЯ И ПРЕПОДАВАТЕЛЕЙ
+@app.get("/api/users/{user_id}/profile")
+async def get_user_profile(
+    user_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Получить профиль пользователя"""
+    if current_user.id != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    user = crud.get_user_by_id(db, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return user
+
+@app.put("/api/users/{user_id}/profile")
+async def update_user_profile(
+    user_id: int,
+    profile_data: UserProfileUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Обновление профиля пользователя"""
+    if current_user.id != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized to update this profile")
+    
+    user = crud.update_user_profile(db, user_id, profile_data.dict(exclude_unset=True))
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return user
+
+@app.get("/api/users/{user_id}/teachers")
+async def get_user_teachers(
+    user_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Получить список преподавателей пользователя"""
+    if current_user.id != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    teachers = crud.get_user_teachers(db, user_id)
+    # Преобразуем объекты SQLAlchemy в словари для корректной сериализации
+    teachers_list = []
+    for teacher in teachers:
+        teachers_list.append({
+            "id": teacher.id,
+            "user_id": teacher.user_id,
+            "teacher_name": teacher.teacher_name,
+            "subject": teacher.subject,
+            "custom_subject": teacher.custom_subject,
+            "created_at": teacher.created_at
+        })
+    
+    return teachers_list
+
+@app.post("/api/users/{user_id}/teachers")
+async def add_user_teacher(
+    user_id: int,
+    teacher_data: TeacherCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Добавить преподавателя пользователю"""
+    if current_user.id != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    teacher = crud.add_user_teacher(db, user_id, teacher_data)
+    return {
+        "id": teacher.id,
+        "user_id": teacher.user_id,
+        "teacher_name": teacher.teacher_name,
+        "subject": teacher.subject,
+        "custom_subject": teacher.custom_subject,
+        "created_at": teacher.created_at
+    }
+
+@app.delete("/api/users/{user_id}/teachers/{teacher_id}")
+async def remove_user_teacher(
+    user_id: int,
+    teacher_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Удалить преподавателя пользователя"""
+    if current_user.id != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    success = crud.remove_user_teacher(db, teacher_id, user_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Teacher not found")
+    
+    return {"message": "Teacher removed successfully"}
+
+@app.put("/api/users/{user_id}/teachers")
+async def update_user_teachers(
+    user_id: int,
+    teachers_data: List[dict],
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Обновить список преподавателей пользователя"""
+    if current_user.id != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    success = crud.update_user_teachers(db, user_id, teachers_data)
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to update teachers")
+    
+    return {"message": "Teachers updated successfully"}
 
 if __name__ == "__main__":
     import uvicorn

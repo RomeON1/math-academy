@@ -411,5 +411,38 @@
     "confirmation": "Sind Sie sicher, dass Sie neue Aufgaben generieren möchten? Der gesamte Fortschritt wird zurückgesetzt.",
     "cancel": "Abbrechen",
     "generate": "Generieren"
+  },
+  "profile": {
+    "title": "Persönlicher Account",
+    "username": "Benutzername",
+    "email": "E-Mail",
+    "parentName": "Elternteil /Vormund/",
+    "parentEmail": "E-Mail des Elternteils /Vormunds/",
+    "age": "Alter des Benutzers",
+    "city": "Stadt, Region, Land",
+    "school": "Schule",
+    "teachers": "Lehrer",
+    "realGrade": "Tatsächliche Klassenstufe in der Schule",
+    "currentGrade": "Aktuelle Klassenstufe in der App",
+    "grade": "Klasse",
+    "updateGrade": "Klasse aktualisieren",
+    "updating": "Aktualisierung...",
+    "gradeUpdated": "Klasse erfolgreich aktualisiert!",
+    "updateError": "Fehler beim Aktualisieren der Klasse",
+    "gradeHistory": "Klassenverlauf",
+    "teacherName": "Name des Lehrers",
+    "subject": "Fach",
+    "customSubject": "Anderes Fach",
+    "addTeacher": "Lehrer hinzufügen",
+    "removeTeacher": "Entfernen",
+    "subjects": {
+      "mathematics": "Mathematik",
+      "physics": "Physik",
+      "chemistry": "Chemie",
+      "biology": "Biologie",
+      "russian": "Russisch",
+      "german": "Deutsch",
+      "other": "Andere"
+    }
   }
 }

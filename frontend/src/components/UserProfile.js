@@ -2,18 +2,61 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { courseAPI } from '../services/api';
 
-const UserProfile = ({ user, onClose, onGradeChange }) => {
+const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
   const { t } = useTranslation();
   const [currentGrade, setCurrentGrade] = useState(user?.grade || 6);
+  const [currentSubject, setCurrentSubject] = useState(user?.current_subject || 'математика');
   const [gradeHistory, setGradeHistory] = useState([]);
+  const [subjectHistory, setSubjectHistory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [activeSection, setActiveSection] = useState('profile');
+  
+  // Новые состояния для полей профиля
+  const [profileData, setProfileData] = useState({
+    parent_name: '',
+    parent_email: '',
+    age: '',
+    school: '',
+    real_grade: '',
+    city: '',
+    teachers: []
+  });
+
+  // Состояния для формы добавления преподавателя
+  const [newTeacher, setNewTeacher] = useState({
+    teacher_name: '',
+    subject: 'математика',
+    custom_subject: ''
+  });
+
+  // Состояние для ошибок валидации
+  const [errors, setErrors] = useState({});
+
+  // Состояния для аккордеонов
+  const [isTeachersExpanded, setIsTeachersExpanded] = useState(false);
+  const [isGradeHistoryExpanded, setIsGradeHistoryExpanded] = useState(false);
+  const [isSubjectHistoryExpanded, setIsSubjectHistoryExpanded] = useState(false);
+
+  // Список доступных предметов
+  const availableSubjects = [
+    { value: 'математика', label: t('profile.subjects.mathematics') },
+    { value: 'физика', label: t('profile.subjects.physics') },
+    { value: 'химия', label: t('profile.subjects.chemistry') },
+    { value: 'биология', label: t('profile.subjects.biology') },
+    { value: 'русский язык', label: t('profile.subjects.russian') },
+    { value: 'немецкий язык', label: t('profile.subjects.german') },
+    { value: 'информатика', label: t('profile.subjects.computer_science') },
+    { value: 'английский язык', label: t('profile.subjects.english') }
+  ];
 
   useEffect(() => {
     if (user) {
       setCurrentGrade(user.grade);
+      setCurrentSubject(user.current_subject || 'математика');
       fetchGradeHistory();
+      fetchSubjectHistory();
+      loadUserProfile();
     }
   }, [user]);
 
@@ -26,6 +69,65 @@ const UserProfile = ({ user, onClose, onGradeChange }) => {
     }
   };
 
+  const fetchSubjectHistory = async () => {
+    try {
+      const response = await courseAPI.getSubjectHistory(user.id);
+      setSubjectHistory(response.data);
+    } catch (error) {
+      console.error('Error fetching subject history:', error);
+      // Если endpoint ещё не реализован, используем mock данные
+      setSubjectHistory([
+        { id: 1, subject: user.current_subject || 'математика', start_date: new Date().toISOString() }
+      ]);
+    }
+  };
+
+  const loadUserProfile = async () => {
+    try {
+      // Загружаем данные профиля из API
+      const userResponse = await courseAPI.getUserProfile(user.id);
+      const userData = userResponse.data;
+      
+      // Загружаем преподавателей
+      const teachersResponse = await courseAPI.getUserTeachers(user.id);
+      const teachersData = teachersResponse.data;
+
+      setProfileData({
+        parent_name: userData.parent_name || '',
+        parent_email: userData.parent_email || '',
+        age: userData.age || '',
+        school: userData.school || '',
+        real_grade: userData.real_grade || '',
+        city: userData.city || '',
+        teachers: teachersData || []
+      });
+    } catch (error) {
+      console.error('Error loading user profile:', error);
+      // Если API не доступно, используем данные из user props
+      setProfileData({
+        parent_name: user.parent_name || '',
+        parent_email: user.parent_email || '',
+        age: user.age || '',
+        school: user.school || '',
+        real_grade: user.real_grade || '',
+        city: user.city || '',
+        teachers: user.teachers || []
+      });
+    }
+  };
+
+  const validateAge = (age) => {
+    if (!age) return true; // Пустое значение допустимо
+    const ageNum = parseInt(age);
+    return ageNum >= 5 && ageNum <= 90;
+  };
+
+  const validateRealGrade = (grade) => {
+    if (!grade) return true; // Пустое значение допустимо
+    const gradeNum = parseInt(grade);
+    return gradeNum >= 1 && gradeNum <= 11;
+  };
+
   const handleGradeChange = async () => {
     if (currentGrade === user.grade) return;
     
@@ -34,14 +136,152 @@ const UserProfile = ({ user, onClose, onGradeChange }) => {
     
     try {
       await courseAPI.updateUserGrade(user.id, currentGrade);
-      setMessage(t('profile.gradeUpdated', 'Класс успешно обновлен!'));
+      setMessage(t('profile.gradeUpdated'));
       if (onGradeChange) {
         onGradeChange(currentGrade);
       }
       await fetchGradeHistory();
     } catch (error) {
-      setMessage(t('profile.updateError', 'Ошибка обновления класса'));
+      setMessage(t('profile.updateError'));
       console.error('Error updating grade:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubjectChange = async () => {
+    if (currentSubject === user.current_subject) return;
+    
+    setLoading(true);
+    setMessage('');
+    
+    try {
+      await courseAPI.updateUserSubject(user.id, currentSubject);
+      setMessage('Предмет успешно изменен!');
+      if (onSubjectChange) {
+        onSubjectChange(currentSubject);
+      }
+      await fetchSubjectHistory();
+    } catch (error) {
+      setMessage('Ошибка изменения предмета');
+      console.error('Error updating subject:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleProfileFieldChange = (field, value) => {
+    setProfileData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+
+    // Валидация в реальном времени
+    if (field === 'age') {
+      if (value && !validateAge(value)) {
+        setErrors(prev => ({ ...prev, age: 'Возраст должен быть от 5 до 90 лет' }));
+      } else {
+        setErrors(prev => ({ ...prev, age: null }));
+      }
+    }
+
+    if (field === 'real_grade') {
+      if (value && !validateRealGrade(value)) {
+        setErrors(prev => ({ ...prev, real_grade: 'Класс должен быть от 1 до 11' }));
+      } else {
+        setErrors(prev => ({ ...prev, real_grade: null }));
+      }
+    }
+  };
+
+  const handleTeacherFieldChange = (field, value) => {
+    setNewTeacher(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleAddTeacher = async () => {
+    if (!newTeacher.teacher_name.trim()) return;
+    
+    setLoading(true);
+    try {
+      const teacherData = {
+        teacher_name: newTeacher.teacher_name.trim(),
+        subject: newTeacher.subject,
+        custom_subject: newTeacher.subject === 'другой' ? newTeacher.custom_subject.trim() : null
+      };
+
+      const response = await courseAPI.addUserTeacher(user.id, teacherData);
+      
+      // Добавляем преподавателя в локальное состояние
+      setProfileData(prev => ({
+        ...prev,
+        teachers: [...prev.teachers, response.data]
+      }));
+      
+      // Сброс формы
+      setNewTeacher({
+        teacher_name: '',
+        subject: 'математика',
+        custom_subject: ''
+      });
+      
+      setMessage('Преподаватель успешно добавлен!');
+    } catch (error) {
+      setMessage('Ошибка добавления преподавателя');
+      console.error('Error adding teacher:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRemoveTeacher = async (teacherId) => {
+    setLoading(true);
+    try {
+      await courseAPI.removeUserTeacher(user.id, teacherId);
+      
+      // Удаляем преподавателя из локального состояния
+      setProfileData(prev => ({
+        ...prev,
+        teachers: prev.teachers.filter(teacher => teacher.id !== teacherId)
+      }));
+      
+      setMessage('Преподаватель успешно удален!');
+    } catch (error) {
+      setMessage('Ошибка удаления преподавателя');
+      console.error('Error removing teacher:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    // Проверка валидации перед сохранением
+    if (errors.age || errors.real_grade) {
+      setMessage('Исправьте ошибки в форме перед сохранением');
+      return;
+    }
+
+    setLoading(true);
+    setMessage('');
+    
+    try {
+      // Подготавливаем данные для отправки
+      const profileUpdateData = {
+        parent_name: profileData.parent_name || null,
+        parent_email: profileData.parent_email || null,
+        age: profileData.age ? parseInt(profileData.age) : null,
+        school: profileData.school || null,
+        real_grade: profileData.real_grade ? parseInt(profileData.real_grade) : null,
+        city: profileData.city || null
+      };
+
+      await courseAPI.updateUserProfile(user.id, profileUpdateData);
+      setMessage('Профиль успешно сохранен!');
+    } catch (error) {
+      setMessage('Ошибка сохранения профиля');
+      console.error('Error saving profile:', error);
     } finally {
       setLoading(false);
     }
@@ -53,44 +293,153 @@ const UserProfile = ({ user, onClose, onGradeChange }) => {
 
   const renderProfileSection = () => (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">👤 Профиль</h2>
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">👤 {t('profile.title')}</h2>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Существующие поля */}
+        {/* Имя пользователя */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            {t('profile.username', 'Имя пользователя')}
+            {t('profile.username')}
           </label>
           <div className="text-lg font-semibold text-gray-900 dark:text-white p-2 bg-gray-50 dark:bg-gray-700 rounded">
             {user.username}
           </div>
         </div>
 
+        {/* Email */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            {t('profile.email', 'Email')}
+            {t('profile.email')}
           </label>
           <div className="text-lg font-semibold text-gray-900 dark:text-white p-2 bg-gray-50 dark:bg-gray-700 rounded">
             {user.email}
           </div>
         </div>
 
-        {/* Смена класса - ОБЪЕДИНЕННЫЙ БЛОК */}
-        <div className="md:col-span-2">
-          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+        {/* Родитель/опекун */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            {t('profile.parentName')} (опционально)
+          </label>
+          <input
+            type="text"
+            value={profileData.parent_name}
+            onChange={(e) => handleProfileFieldChange('parent_name', e.target.value)}
+            placeholder="ФИО родителя или опекуна"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            disabled={loading}
+          />
+        </div>
+
+        {/* Email родителя/опекуна */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            {t('profile.parentEmail')} (опционально)
+          </label>
+          <input
+            type="email"
+            value={profileData.parent_email}
+            onChange={(e) => handleProfileFieldChange('parent_email', e.target.value)}
+            placeholder="email@example.com"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            disabled={loading}
+          />
+        </div>
+
+        {/* Возраст */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            {t('profile.age')} (опционально)
+          </label>
+          <input
+            type="number"
+            min="5"
+            max="90"
+            value={profileData.age}
+            onChange={(e) => handleProfileFieldChange('age', e.target.value)}
+            placeholder="От 5 до 90 лет"
+            className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
+              errors.age 
+                ? 'border-red-500 dark:border-red-400' 
+                : 'border-gray-300 dark:border-gray-600'
+            }`}
+            disabled={loading}
+          />
+          {errors.age && (
+            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.age}</p>
+          )}
+        </div>
+
+        {/* Город/регион */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            {t('profile.city')} (опционально)
+          </label>
+          <input
+            type="text"
+            value={profileData.city}
+            onChange={(e) => handleProfileFieldChange('city', e.target.value)}
+            placeholder="Город, регион, страна"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            disabled={loading}
+          />
+        </div>
+
+        {/* Школа */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            {t('profile.school')} (опционально)
+          </label>
+          <input
+            type="text"
+            value={profileData.school}
+            onChange={(e) => handleProfileFieldChange('school', e.target.value)}
+            placeholder="Название школы"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            disabled={loading}
+          />
+        </div>
+
+        {/* Реальный класс в школе */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            {t('profile.realGrade')} (опционально)
+          </label>
+          <input
+            type="number"
+            min="1"
+            max="11"
+            value={profileData.real_grade}
+            onChange={(e) => handleProfileFieldChange('real_grade', e.target.value)}
+            placeholder="От 1 до 11 класса"
+            className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
+              errors.real_grade 
+                ? 'border-red-500 dark:border-red-400' 
+                : 'border-gray-300 dark:border-gray-600'
+            }`}
+            disabled={loading}
+          />
+          {errors.real_grade && (
+            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.real_grade}</p>
+          )}
+        </div>
+
+        {/* Блок управления классом - ТЕПЕРЬ 1/2 ШИРИНЫ */}
+        <div>
+          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600 h-full">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-              {t('profile.currentGrade', 'Текущий класс')}
+              {t('profile.currentGrade')}
             </label>
-            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+            <div className="flex flex-col gap-3 mb-4">
               <select
-                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                 value={currentGrade}
                 onChange={(e) => setCurrentGrade(parseInt(e.target.value))}
                 disabled={loading}
               >
                 {Array.from({ length: 11 }, (_, i) => i + 1).map(grade => (
                   <option key={grade} value={grade}>
-                    {t('profile.grade', 'Класс')} {grade}
+                    {t('profile.grade')} {grade}
                   </option>
                 ))}
               </select>
@@ -98,105 +447,280 @@ const UserProfile = ({ user, onClose, onGradeChange }) => {
               <button
                 onClick={handleGradeChange}
                 disabled={loading || currentGrade === user.grade}
-                className="px-6 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white rounded-lg font-medium transition-colors whitespace-nowrap"
+                className="w-full px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white rounded-lg font-medium transition-colors"
               >
-                {loading ? t('profile.updating', 'Обновление...') : t('profile.updateGrade', 'Обновить класс')}
+                {loading ? t('profile.updating') : t('profile.updateGrade')}
               </button>
             </div>
             
-            {/* Сообщения внутри блока */}
-            {message && (
-              <div className={`mt-3 p-3 rounded-md ${
-                message.includes('Ошибка') 
-                  ? 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-300'
-                  : 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300'
-              }`}>
-                {message}
+            {/* История классов внутри того же блока - АККОРДЕОН */}
+            {gradeHistory.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+                {/* Заголовок аккордеона истории классов */}
+                <button
+                  onClick={() => setIsGradeHistoryExpanded(!isGradeHistoryExpanded)}
+                  className="w-full text-left flex justify-between items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                >
+                  <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                    {t('profile.gradeHistory')}
+                  </span>
+                  <svg
+                    className={`w-4 h-4 text-gray-500 transform transition-transform ${
+                      isGradeHistoryExpanded ? 'rotate-180' : ''
+                    }`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {/* Контент истории классов */}
+                {isGradeHistoryExpanded && (
+                  <div className="mt-2 space-y-1">
+                    {gradeHistory.map((record, index) => (
+                      <div key={record.id} className="flex justify-between items-center p-2 bg-white dark:bg-gray-600 rounded text-sm">
+                        <span className="text-gray-900 dark:text-white">
+                          {t('profile.grade')} {record.grade}
+                        </span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {new Date(record.start_date).toLocaleDateString()}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
         </div>
 
-        {/* Новые поля профиля */}
+        {/* НОВЫЙ БЛОК УПРАВЛЕНИЯ ПРЕДМЕТОМ - 1/2 ШИРИНЫ */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Возраст (опционально)
-          </label>
-          <input
-            type="number"
-            placeholder="Введите возраст"
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-          />
+          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600 h-full">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+              Текущий предмет изучения
+            </label>
+            <div className="flex flex-col gap-3 mb-4">
+              <select
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                value={currentSubject}
+                onChange={(e) => setCurrentSubject(e.target.value)}
+                disabled={loading}
+              >
+                {availableSubjects.map(subject => (
+                  <option key={subject.value} value={subject.value}>
+                    {subject.label}
+                  </option>
+                ))}
+              </select>
+              
+              <button
+                onClick={handleSubjectChange}
+                disabled={loading || currentSubject === user.current_subject}
+                className="w-full px-4 py-2 bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white rounded-lg font-medium transition-colors"
+              >
+                {loading ? 'Изменение...' : 'Сменить предмет'}
+              </button>
+            </div>
+            
+            {/* История предметов - АККОРДЕОН */}
+            {subjectHistory.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+                {/* Заголовок аккордеона истории предметов */}
+                <button
+                  onClick={() => setIsSubjectHistoryExpanded(!isSubjectHistoryExpanded)}
+                  className="w-full text-left flex justify-between items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                >
+                  <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                    История предметов
+                  </span>
+                  <svg
+                    className={`w-4 h-4 text-gray-500 transform transition-transform ${
+                      isSubjectHistoryExpanded ? 'rotate-180' : ''
+                    }`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {/* Контент истории предметов */}
+                {isSubjectHistoryExpanded && (
+                  <div className="mt-2 space-y-1">
+                    {subjectHistory.map((record, index) => (
+                      <div key={record.id} className="flex justify-between items-center p-2 bg-white dark:bg-gray-600 rounded text-sm">
+                        <span className="text-gray-900 dark:text-white">
+                          {availableSubjects.find(s => s.value === record.subject)?.label || record.subject}
+                        </span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {new Date(record.start_date).toLocaleDateString()}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Школа (опционально)
-          </label>
-          <input
-            type="text"
-            placeholder="Название школы"
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Реальный класс в школе
-          </label>
-          <input
-            type="number"
-            placeholder="Ваш реальный класс"
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-          />
-        </div>
-
+        {/* Преподаватели - АККОРДЕОН */}
         <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Преподаватель (опционально)
-          </label>
-          <input
-            type="text"
-            placeholder="ФИО преподавателя"
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-          />
-        </div>
+          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden">
+            {/* Заголовок аккордеона */}
+            <button
+              onClick={() => setIsTeachersExpanded(!isTeachersExpanded)}
+              className="w-full px-4 py-3 text-left flex justify-between items-center hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+            >
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {t('profile.teachers')} (опционально)
+              </span>
+              <svg
+                className={`w-5 h-5 text-gray-500 transform transition-transform ${
+                  isTeachersExpanded ? 'rotate-180' : ''
+                }`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
 
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Город/регион (опционально)
-          </label>
-          <input
-            type="text"
-            placeholder="Ваш город или регион"
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-          />
+            {/* Контент аккордеона */}
+            {isTeachersExpanded && (
+              <div className="px-4 pb-4 space-y-4">
+                {/* Список преподавателей */}
+                {profileData.teachers.length > 0 && (
+                  <div className="space-y-2">
+                    {profileData.teachers.map((teacher) => (
+                      <div key={teacher.id} className="flex items-center justify-between p-3 bg-white dark:bg-gray-600 rounded-lg">
+                        <div className="flex items-center space-x-3">
+                          <span className="font-medium text-gray-900 dark:text-white">
+                            {teacher.teacher_name}
+                          </span>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">
+                            {teacher.subject === 'другой' ? teacher.custom_subject : t(`profile.subjects.${getSubjectKey(teacher.subject)}`)}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => handleRemoveTeacher(teacher.id)}
+                          disabled={loading}
+                          className="text-red-500 hover:text-red-700 disabled:text-red-300 text-sm p-1"
+                          title="Удалить преподавателя"
+                        >
+                          ❌
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Форма добавления преподавателя */}
+                <div className="bg-white dark:bg-gray-600 rounded-lg p-4 space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {/* ФИО преподавателя - 2/3 ширины */}
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                        {t('profile.teacherName')}
+                      </label>
+                      <input
+                        type="text"
+                        value={newTeacher.teacher_name}
+                        onChange={(e) => handleTeacherFieldChange('teacher_name', e.target.value)}
+                        placeholder="ФИО преподавателя"
+                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        disabled={loading}
+                      />
+                    </div>
+                    
+                    {/* Предмет - 1/3 ширины */}
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                        {t('profile.subject')}
+                      </label>
+                      <select
+                        value={newTeacher.subject}
+                        onChange={(e) => handleTeacherFieldChange('subject', e.target.value)}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        disabled={loading}
+                      >
+                        <option value="математика">{t('profile.subjects.mathematics')}</option>
+                        <option value="физика">{t('profile.subjects.physics')}</option>
+                        <option value="химия">{t('profile.subjects.chemistry')}</option>
+                        <option value="биология">{t('profile.subjects.biology')}</option>
+                        <option value="русский язык">{t('profile.subjects.russian')}</option>
+                        <option value="немецкий язык">{t('profile.subjects.german')}</option>
+                        <option value="другой">{t('profile.subjects.other')}</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Другой предмет - 1/3 ширины под полем предмет */}
+                  {newTeacher.subject === 'другой' && (
+                    <div className="flex justify-end">
+                      <div className="w-1/3">
+                        <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                          {t('profile.customSubject')}
+                        </label>
+                        <input
+                          type="text"
+                          value={newTeacher.custom_subject}
+                          onChange={(e) => handleTeacherFieldChange('custom_subject', e.target.value)}
+                          placeholder="Название предмета"
+                          className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                          disabled={loading}
+                        />
+                      </div>
+                    </div>
+                  )}
+                  
+                  <button
+                    onClick={handleAddTeacher}
+                    disabled={loading || !newTeacher.teacher_name.trim()}
+                    className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white rounded text-sm font-medium transition-colors"
+                  >
+                    {loading ? 'Добавление...' : t('profile.addTeacher')}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* История классов */}
-      {gradeHistory.length > 0 && (
-        <div className="pt-6 border-t border-gray-200 dark:border-gray-600">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-            {t('profile.gradeHistory', 'История классов')}
-          </h3>
-          <div className="space-y-2">
-            {gradeHistory.map((record, index) => (
-              <div key={record.id} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <span className="text-gray-900 dark:text-white font-medium">
-                  {t('profile.grade', 'Класс')} {record.grade}
-                </span>
-                <span className="text-sm text-gray-500 dark:text-gray-400">
-                  {new Date(record.start_date).toLocaleDateString()}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Кнопка сохранения профиля */}
+      <div className="flex justify-end pt-4 border-t border-gray-200 dark:border-gray-600">
+        <button
+          onClick={handleSaveProfile}
+          disabled={loading || errors.age || errors.real_grade}
+          className="px-6 py-2 bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white rounded-lg font-medium transition-colors"
+        >
+          {loading ? 'Сохранение...' : 'Сохранить профиль'}
+        </button>
+      </div>
     </div>
   );
 
+  // Вспомогательная функция для получения ключа перевода предмета
+  const getSubjectKey = (subject) => {
+    const subjectMap = {
+      'математика': 'mathematics',
+      'физика': 'physics',
+      'химия': 'chemistry',
+      'биология': 'biology',
+      'русский язык': 'russian',
+      'немецкий язык': 'german',
+      'другой': 'other'
+    };
+    return subjectMap[subject] || 'other';
+  };
+
+  // Остальные разделы без изменений
   const renderProgressSection = () => (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-gray-900 dark:text-white">📊 Прогресс и статистика</h2>
@@ -259,7 +783,7 @@ const UserProfile = ({ user, onClose, onGradeChange }) => {
         <div className="hidden md:flex md:w-1/4 bg-gray-50 dark:bg-gray-700 rounded-l-xl p-6 flex-col">
           <div className="flex-1">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">
-              {t('profile.title', 'Личный кабинет')}
+              {t('profile.title')}
             </h3>
             <nav className="space-y-2">
               {[
@@ -296,7 +820,7 @@ const UserProfile = ({ user, onClose, onGradeChange }) => {
         <div className="md:hidden bg-gray-50 dark:bg-gray-700 p-4 border-b border-gray-200 dark:border-gray-600">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-              {t('profile.title', 'Личный кабинет')}
+              {t('profile.title')}
             </h3>
             <button
               onClick={onClose}

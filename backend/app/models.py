@@ -3,8 +3,18 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import hashlib
+from enum import Enum
 
 Base = declarative_base()
+
+class Subject(Enum):
+    MATH = "математика"
+    PHYSICS = "физика"
+    CHEMISTRY = "химия"
+    BIOLOGY = "биология"
+    RUSSIAN = "русский язык"
+    GERMAN = "немецкий язык"
+    OTHER = "другой"
 
 class User(Base):
     __tablename__ = "users"
@@ -14,6 +24,13 @@ class User(Base):
     username = Column(String, unique=True, index=True)
     hashed_password = Column(String)
     grade = Column(Integer)
+    current_subject = Column(String, default='математика')
+    parent_name = Column(String, nullable=True)
+    parent_email = Column(String, nullable=True)
+    age = Column(Integer, nullable=True)
+    school = Column(String, nullable=True)
+    real_grade = Column(Integer, nullable=True)
+    city = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     
     # Relationships
@@ -22,6 +39,33 @@ class User(Base):
     progress = relationship("UserProgress", back_populates="user")
     task_versions = relationship("TaskVersion", back_populates="user")
     grade_history = relationship("UserGradeHistory", back_populates="user")
+    subject_history = relationship("UserSubjectHistory", back_populates="user")
+    teachers = relationship("UserTeacher", back_populates="user")
+
+class UserTeacher(Base):
+    __tablename__ = "user_teachers"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    teacher_name = Column(String)
+    subject = Column(String)
+    custom_subject = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    user = relationship("User", back_populates="teachers")
+
+class UserSubjectHistory(Base):
+    __tablename__ = "user_subject_history"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    subject = Column(String)
+    start_date = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    user = relationship("User", back_populates="subject_history")
 
 class TaskVersion(Base):
     __tablename__ = "task_versions"

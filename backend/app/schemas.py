@@ -6,7 +6,23 @@ from datetime import datetime
 class UserBase(BaseModel):
     email: EmailStr
     username: str
-    grade: str = "6"
+    grade: int = 6
+    current_subject: str = 'математика'
+    parent_name: Optional[str] = None
+    parent_email: Optional[str] = None
+    age: Optional[int] = None
+    school: Optional[str] = None
+    real_grade: Optional[int] = None
+    city: Optional[str] = None
+
+class UserProfileUpdate(BaseModel):
+    parent_name: Optional[str] = None
+    parent_email: Optional[str] = None
+    age: Optional[int] = None
+    school: Optional[str] = None
+    real_grade: Optional[int] = None
+    city: Optional[str] = None
+    current_subject: Optional[str] = None
 
 class UserCreate(UserBase):
     password: str
@@ -18,6 +34,23 @@ class UserLogin(BaseModel):
 class UserResponse(UserBase):
     id: int
     is_active: bool = True
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+# Схемы для преподавателей
+class TeacherBase(BaseModel):
+    teacher_name: str
+    subject: str
+    custom_subject: Optional[str] = None
+
+class TeacherCreate(TeacherBase):
+    pass
+
+class TeacherResponse(TeacherBase):
+    id: int
+    user_id: int
     created_at: datetime
 
     class Config:
@@ -84,3 +117,16 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     user_id: Optional[int] = None
+
+# Схемы для истории предметов
+class SubjectHistoryBase(BaseModel):
+    subject: str
+    start_date: datetime
+
+class SubjectHistoryResponse(SubjectHistoryBase):
+    id: int
+    user_id: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
