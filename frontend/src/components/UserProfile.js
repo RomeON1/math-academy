@@ -179,7 +179,7 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
     // Валидация в реальном времени
     if (field === 'age') {
       if (value && !validateAge(value)) {
-        setErrors(prev => ({ ...prev, age: 'Возраст должен быть от 5 до 90 лет' }));
+        setErrors(prev => ({ ...prev, age: t('profile.ageValidationError') }));
       } else {
         setErrors(prev => ({ ...prev, age: null }));
       }
@@ -187,7 +187,7 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
 
     if (field === 'real_grade') {
       if (value && !validateRealGrade(value)) {
-        setErrors(prev => ({ ...prev, real_grade: 'Класс должен быть от 1 до 11' }));
+        setErrors(prev => ({ ...prev, real_grade: t('profile.gradeValidationError') }));
       } else {
         setErrors(prev => ({ ...prev, real_grade: null }));
       }
@@ -293,7 +293,7 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
 
   const renderProfileSection = () => (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">👤 {t('profile.title')}</h2>
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">👤 {t('profile.sections.userProfile')}</h2>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Имя пользователя */}
@@ -424,150 +424,6 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
           )}
         </div>
 
-        {/* Блок управления классом - ТЕПЕРЬ 1/2 ШИРИНЫ */}
-        <div>
-          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600 h-full">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-              {t('profile.currentGrade')}
-            </label>
-            <div className="flex flex-col gap-3 mb-4">
-              <select
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                value={currentGrade}
-                onChange={(e) => setCurrentGrade(parseInt(e.target.value))}
-                disabled={loading}
-              >
-                {Array.from({ length: 11 }, (_, i) => i + 1).map(grade => (
-                  <option key={grade} value={grade}>
-                    {t('profile.grade')} {grade}
-                  </option>
-                ))}
-              </select>
-              
-              <button
-                onClick={handleGradeChange}
-                disabled={loading || currentGrade === user.grade}
-                className="w-full px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white rounded-lg font-medium transition-colors"
-              >
-                {loading ? t('profile.updating') : t('profile.updateGrade')}
-              </button>
-            </div>
-            
-            {/* История классов внутри того же блока - АККОРДЕОН */}
-            {gradeHistory.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
-                {/* Заголовок аккордеона истории классов */}
-                <button
-                  onClick={() => setIsGradeHistoryExpanded(!isGradeHistoryExpanded)}
-                  className="w-full text-left flex justify-between items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors"
-                >
-                  <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                    {t('profile.gradeHistory')}
-                  </span>
-                  <svg
-                    className={`w-4 h-4 text-gray-500 transform transition-transform ${
-                      isGradeHistoryExpanded ? 'rotate-180' : ''
-                    }`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-
-                {/* Контент истории классов */}
-                {isGradeHistoryExpanded && (
-                  <div className="mt-2 space-y-1">
-                    {gradeHistory.map((record, index) => (
-                      <div key={record.id} className="flex justify-between items-center p-2 bg-white dark:bg-gray-600 rounded text-sm">
-                        <span className="text-gray-900 dark:text-white">
-                          {t('profile.grade')} {record.grade}
-                        </span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {new Date(record.start_date).toLocaleDateString()}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* НОВЫЙ БЛОК УПРАВЛЕНИЯ ПРЕДМЕТОМ - 1/2 ШИРИНЫ */}
-        <div>
-          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600 h-full">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-              {t('profile.currentSubject')}
-            </label>
-            <div className="flex flex-col gap-3 mb-4">
-              <select
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                value={currentSubject}
-                onChange={(e) => setCurrentSubject(e.target.value)}
-                disabled={loading}
-              >
-                {availableSubjects.map(subject => (
-                  <option key={subject.value} value={subject.value}>
-                    {subject.label}
-                  </option>
-                ))}
-              </select>
-              
-              <button
-                onClick={handleSubjectChange}
-                disabled={loading || currentSubject === user.current_subject}
-                className="w-full px-4 py-2 bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white rounded-lg font-medium transition-colors"
-              >
-                {loading ? t('profile.changing') : t('profile.changeSubject')}
-              </button>
-            </div>
-            
-            {/* История предметов - АККОРДЕОН */}
-            {subjectHistory.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
-                {/* Заголовок аккордеона истории предметов */}
-                <button
-                  onClick={() => setIsSubjectHistoryExpanded(!isSubjectHistoryExpanded)}
-                  className="w-full text-left flex justify-between items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors"
-                >
-                  <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                    {t('profile.subjectHistory')}
-                  </span>
-                  <svg
-                    className={`w-4 h-4 text-gray-500 transform transition-transform ${
-                      isSubjectHistoryExpanded ? 'rotate-180' : ''
-                    }`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-
-                {/* Контент истории предметов */}
-                {isSubjectHistoryExpanded && (
-                  <div className="mt-2 space-y-1">
-                    {subjectHistory.map((record, index) => (
-                      <div key={record.id} className="flex justify-between items-center p-2 bg-white dark:bg-gray-600 rounded text-sm">
-                        <span className="text-gray-900 dark:text-white">
-                          {availableSubjects.find(s => s.value === record.subject)?.label || record.subject}
-                        </span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {new Date(record.start_date).toLocaleDateString()}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-
         {/* Преподаватели - АККОРДЕОН */}
         <div className="md:col-span-2">
           <div className="bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden">
@@ -623,7 +479,7 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
                 {/* Форма добавления преподавателя */}
                 <div className="bg-white dark:bg-gray-600 rounded-lg p-4 space-y-3">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    {/* ФИО преподавателя - 2/3 ширины */}
+                    {/* ФИО преподавателя */}
                     <div className="md:col-span-2">
                       <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
                         {t('profile.teacherName')}
@@ -638,7 +494,7 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
                       />
                     </div>
                     
-                    {/* Предмет - 1/3 ширины */}
+                    {/* Предмет */}
                     <div>
                       <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
                         {t('profile.subject')}
@@ -660,7 +516,7 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
                     </div>
                   </div>
 
-                  {/* Другой предмет - 1/3 ширины под полем предмет */}
+                  {/* Другой предмет */}
                   {newTeacher.subject === 'другой' && (
                     <div className="flex justify-end">
                       <div className="w-1/3">
@@ -706,6 +562,158 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
     </div>
   );
 
+  const renderSettingsSection = () => (
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t('profile.sections.settings')}</h2>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Блок управления классом */}
+        <div>
+          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+              {t('profile.currentGrade')}
+            </label>
+            <div className="flex flex-col gap-3 mb-4">
+              <select
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                value={currentGrade}
+                onChange={(e) => setCurrentGrade(parseInt(e.target.value))}
+                disabled={loading}
+              >
+                {Array.from({ length: 11 }, (_, i) => i + 1).map(grade => (
+                  <option key={grade} value={grade}>
+                    {t('profile.grade')} {grade}
+                  </option>
+                ))}
+              </select>
+              
+              <button
+                onClick={handleGradeChange}
+                disabled={loading || currentGrade === user.grade}
+                className="w-full px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white rounded-lg font-medium transition-colors"
+              >
+                {loading ? t('profile.updating') : t('profile.updateGrade')}
+              </button>
+            </div>
+            
+            {/* История классов внутри того же блока - АККОРДЕОН */}
+            {gradeHistory.length > 0 && (
+              <div className="border-t border-gray-200 dark:border-gray-600">
+                {/* Заголовок аккордеона истории классов */}
+                <button
+                  onClick={() => setIsGradeHistoryExpanded(!isGradeHistoryExpanded)}
+                  className="w-full text-left flex justify-between items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors mt-2"
+                >
+                  <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                    {t('profile.gradeHistory')}
+                  </span>
+                  <svg
+                    className={`w-4 h-4 text-gray-500 transform transition-transform ${
+                      isGradeHistoryExpanded ? 'rotate-180' : ''
+                    }`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {/* Контент истории классов */}
+                {isGradeHistoryExpanded && (
+                  <div className="mt-2 space-y-1">
+                    {gradeHistory.map((record, index) => (
+                      <div key={record.id} className="flex justify-between items-center p-2 bg-white dark:bg-gray-600 rounded text-sm">
+                        <span className="text-gray-900 dark:text-white">
+                          {t('profile.grade')} {record.grade}
+                        </span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {new Date(record.start_date).toLocaleDateString()}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Блок управления предметом */}
+        <div>
+          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+              {t('profile.currentSubject')}
+            </label>
+            <div className="flex flex-col gap-3 mb-4">
+              <select
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                value={currentSubject}
+                onChange={(e) => setCurrentSubject(e.target.value)}
+                disabled={loading}
+              >
+                {availableSubjects.map(subject => (
+                  <option key={subject.value} value={subject.value}>
+                    {subject.label}
+                  </option>
+                ))}
+              </select>
+              
+              <button
+                onClick={handleSubjectChange}
+                disabled={loading || currentSubject === user.current_subject}
+                className="w-full px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white rounded-lg font-medium transition-colors"
+              >
+                {loading ? t('profile.changing') : t('profile.changeSubject')}
+              </button>
+            </div>
+            
+            {/* История предметов - АККОРДЕОН */}
+            {subjectHistory.length > 0 && (
+              <div className="border-t border-gray-200 dark:border-gray-600">
+                {/* Заголовок аккордеона истории предметов */}
+                <button
+                  onClick={() => setIsSubjectHistoryExpanded(!isSubjectHistoryExpanded)}
+                  className="w-full text-left flex justify-between items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors mt-2"
+                >
+                  <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                    {t('profile.subjectHistory')}
+                  </span>
+                  <svg
+                    className={`w-4 h-4 text-gray-500 transform transition-transform ${
+                      isSubjectHistoryExpanded ? 'rotate-180' : ''
+                    }`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {/* Контент истории предметов */}
+                {isSubjectHistoryExpanded && (
+                  <div className="mt-2 space-y-1">
+                    {subjectHistory.map((record, index) => (
+                      <div key={record.id} className="flex justify-between items-center p-2 bg-white dark:bg-gray-600 rounded text-sm">
+                        <span className="text-gray-900 dark:text-white">
+                          {availableSubjects.find(s => s.value === record.subject)?.label || record.subject}
+                        </span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {new Date(record.start_date).toLocaleDateString()}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   // Вспомогательная функция для получения ключа перевода предмета
   const getSubjectKey = (subject) => {
     const subjectMap = {
@@ -738,17 +746,6 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
       <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
         <p className="text-yellow-800 dark:text-yellow-200">
           {t('profile.sections.achievementsDevelopment')}
-        </p>
-      </div>
-    </div>
-  );
-
-  const renderSettingsSection = () => (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t('profile.sections.settings')}</h2>
-      <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-        <p className="text-yellow-800 dark:text-yellow-200">
-          {t('profile.sections.settingsDevelopment')}
         </p>
       </div>
     </div>
