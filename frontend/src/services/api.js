@@ -201,6 +201,37 @@ export const profileAPI = {
   }
 };
 
+// ФУНКЦИИ ДЛЯ СТАТИСТИКИ
+export const statsAPI = {
+  // Общая статистика
+  getStatsOverview: () => {
+    const user = JSON.parse(localStorage.getItem('userData'));
+    if (!user) throw new Error('User not authenticated');
+    return api.get(`/users/${user.id}/stats/overview`);
+  },
+
+  // Статистика прогресса по дням
+  getStatsProgress: () => {
+    const user = JSON.parse(localStorage.getItem('userData'));
+    if (!user) throw new Error('User not authenticated');
+    return api.get(`/users/${user.id}/stats/progress`);
+  },
+
+  // Статистика успеваемости
+  getStatsPerformance: () => {
+    const user = JSON.parse(localStorage.getItem('userData'));
+    if (!user) throw new Error('User not authenticated');
+    return api.get(`/users/${user.id}/stats/performance`);
+  },
+
+  // Статистика по типам заданий
+  getStatsTaskTypes: () => {
+    const user = JSON.parse(localStorage.getItem('userData'));
+    if (!user) throw new Error('User not authenticated');
+    return api.get(`/users/${user.id}/stats/task-types`);
+  }
+};
+
 // Добавляем методы в courseAPI для обратной совместимости
 courseAPI.updateUserGrade = gradeAPI.updateUserGrade;
 courseAPI.getGradeHistory = gradeAPI.getGradeHistory;
@@ -218,5 +249,11 @@ courseAPI.getUserTeachers = profileAPI.getUserTeachers;
 courseAPI.addUserTeacher = profileAPI.addUserTeacher;
 courseAPI.removeUserTeacher = profileAPI.removeUserTeacher;
 courseAPI.updateUserTeachers = profileAPI.updateUserTeachers;
+
+// Добавляем методы статистики в courseAPI
+courseAPI.getStatsOverview = statsAPI.getStatsOverview;
+courseAPI.getStatsProgress = statsAPI.getStatsProgress;
+courseAPI.getStatsPerformance = statsAPI.getStatsPerformance;
+courseAPI.getStatsTaskTypes = statsAPI.getStatsTaskTypes;
 
 export default api;

@@ -1,11 +1,12 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import and_
+from sqlalchemy import and_, func
 import models
 import schemas
 from auth import get_password_hash, verify_password
 import hashlib
 import json
 from datetime import datetime
+from typing import List, Dict, Any
 
 def create_user(db: Session, user_data: schemas.UserCreate):
     hashed_password = get_password_hash(user_data.password)
@@ -400,3 +401,142 @@ def update_user_teachers(db: Session, user_id: int, teachers_data: list):
     
     db.commit()
     return True
+
+# Функции для статистики
+def get_user_progress_stats(db: Session, user_id: int, subject: str = None) -> List[Dict[str, Any]]:
+    """Получить статистику прогресса по дням"""
+    query = db.query(models.UserProgress).filter(
+        models.UserProgress.user_id == user_id
+    )
+    
+    if subject:
+        query = query.filter(models.UserProgress.subject == subject)
+    
+    progress_data = query.order_by(models.UserProgress.day).all()
+    
+    stats = []
+    for progress in progress_data:
+        total_tasks = progress.total_tasks or 10
+        progress_percentage = (progress.completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
+        
+        stats.append({
+            "day": progress.day,
+            "completed_tasks": progress.completed_tasks,
+            "total_tasks": total_tasks,
+            "progress_percentage": round(progress_percentage, 2),
+            "subject": progress.subject
+        })
+    
+    return stats
+
+def get_user_performance_stats(db: Session, user_id: int, subject: str = None) -> Dict[str, Any]:
+    """Получить статистику успеваемости"""
+    query = db.query(models.UserAnswer).filter(
+        models.UserAnswer.user_id == user_id
+    )
+    
+    if subject:
+        query = query.filter(models.UserAnswer.subject == subject)
+    
+    answers = query.all()
+    
+    total_answers = len(answers)
+    correct_answers = sum(1 for answer in answers if answer.is_correct)
+    incorrect_answers = total_answers - correct_answers
+    success_rate = (correct_answers / total_answers * 100) if total_answers > 0 else 0
+    
+    return {
+        "total_answers": total_answers,
+        "correct_answers": correct_answers,
+        "incorrect_answers": incorrect_answers,
+        "success_rate": round(success_rate, 2),
+        "subject": subject
+    }
+
+def get_user_task_types_stats(db: Session, user_id: int, subject: str = None) -> List[Dict[str, Any]]:
+    """Получить статистику по типам заданий - ИСПРАВЛЕННАЯ ВЕРСИЯ"""
+    query = db.query(models.UserTask).filter(
+        models.UserTask.user_id == user_id
+    )
+    
+    if subject:
+        query = query.filter(models.UserTask.subject == subject)
+    
+    tasks = query.all()
+    
+    # Группируем задания по типам (translation_key)
+    task_types = {}
+    for task in tasks:
+        task_type = task.translation_key or "unknown"
+        if task_type not in task_types:
+            task_types[task_type] = {"count": 0, "correct_count": 0}
+        task_types[task_type]["count"] += 1
+    
+    # Считаем правильные ответы для каждого типа заданий
+    # ИСПРАВЛЕНИЕ: явно указываем условия JOIN
+    for task_type in task_types:
+        type_query = db.query(models.UserAnswer).join(
+            models.UserTask,
+            and_(
+                models.UserAnswer.user_id == models.UserTask.user_id,
+                models.UserAnswer.day == models.UserTask.day,
+                models.UserAnswer.task_index == models.UserTask.task_index
+            )
+        ).filter(
+            models.UserAnswer.user_id == user_id,
+            models.UserTask.translation_key == task_type
+        )
+        
+        if subject:
+            type_query = type_query.filter(models.UserAnswer.subject == subject)
+        
+        type_answers = type_query.all()
+        correct_count = sum(1 for answer in type_answers if answer.is_correct)
+        task_types[task_type]["correct_count"] = correct_count
+    
+    # Формируем результат
+    stats = []
+    for task_type, data in task_types.items():
+        count = data["count"]
+        correct_count = data["correct_count"]
+        success_rate = (correct_count / count * 100) if count > 0 else 0
+        
+        stats.append({
+            "task_type": task_type,
+            "count": count,
+            "correct_count": correct_count,
+            "success_rate": round(success_rate, 2),
+            "subject": subject
+        })
+    
+    return stats
+
+def get_user_stats_overview(db: Session, user_id: int) -> Dict[str, Any]:
+    """Получить общую статистику пользователя"""
+    # Прогресс по дням
+    progress_stats = get_user_progress_stats(db, user_id)
+    
+    # Успеваемость
+    performance_stats = get_user_performance_stats(db, user_id)
+    
+    # Расчет общей статистики
+    total_days = len(progress_stats)
+    completed_days = sum(1 for day in progress_stats if day["progress_percentage"] >= 100)
+    
+    total_tasks = sum(day["total_tasks"] for day in progress_stats)
+    completed_tasks = sum(day["completed_tasks"] for day in progress_stats)
+    
+    overall_progress = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
+    overall_success_rate = performance_stats["success_rate"]
+    
+    average_daily_progress = (sum(day["progress_percentage"] for day in progress_stats) / total_days) if total_days > 0 else 0
+    
+    return {
+        "total_days": total_days,
+        "completed_days": completed_days,
+        "total_tasks": total_tasks,
+        "completed_tasks": completed_tasks,
+        "overall_progress": round(overall_progress, 2),
+        "overall_success_rate": round(overall_success_rate, 2),
+        "average_daily_progress": round(average_daily_progress, 2)
+    }

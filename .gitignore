@@ -31,3 +31,6 @@ Thumbs.db
 
 # Backups
 backup_*.sql
+
+# Cache
+frontend/node_modules/.cache/

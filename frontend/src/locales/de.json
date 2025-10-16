@@ -502,5 +502,25 @@
     "russian": "Russisch",
     "german": "Deutsch",
     "other": "Andere"
+  },
+  "stats": {
+    "title": "Statistik",
+    "overview": "Übersicht",
+    "progress": "Fortschritt",
+    "performance": "Leistung",
+    "taskTypes": "Aufgabentypen",
+    "totalDays": "Gesamttage",
+    "completedDays": "Abgeschlossene Tage",
+    "overallProgress": "Gesamtfortschritt",
+    "successRate": "Erfolgsrate",
+    "dailyProgress": "Täglicher Fortschritt",
+    "correctAnswers": "Richtige Antworten",
+    "incorrectAnswers": "Falsche Antworten",
+    "taskType": "Aufgabentyp",
+    "successRateByType": "Erfolgsrate nach Typ",
+    "allSubjects": "Alle Fächer",
+    "bySubject": "Nach Fach",
+    "loading": "Lade Statistik...",
+    "noData": "Keine Daten verfügbar"
   }
 }

@@ -86,6 +86,7 @@ class UserTask(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
     day = Column(Integer)
     task_index = Column(Integer)
+    subject = Column(String, nullable=True)  # 🆕 ДОБАВЛЕНО ДЛЯ СТАТИСТИКИ
     question = Column(Text)
     answer = Column(Text)
     explanation = Column(Text, nullable=True)
@@ -106,6 +107,7 @@ class UserAnswer(Base):
     task_version_id = Column(Integer, ForeignKey("task_versions.id"))
     day = Column(Integer)
     task_index = Column(Integer)
+    subject = Column(String, nullable=True)  # 🆕 ДОБАВЛЕНО ДЛЯ СТАТИСТИКИ
     answer = Column(Text)
     is_correct = Column(Boolean)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -120,6 +122,7 @@ class UserProgress(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     day = Column(Integer)
+    subject = Column(String, nullable=True)  # 🆕 ДОБАВЛЕНО ДЛЯ СТАТИСТИКИ
     completed_tasks = Column(Integer, default=0)
     total_tasks = Column(Integer, default=0)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

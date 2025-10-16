@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { courseAPI } from '../services/api';
+import StatsCards from './statistics/StatsCards';
 
 const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
   const { t } = useTranslation();
@@ -50,6 +51,15 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
     { value: 'информатика', label: t('profile.subjects.computer_science') }
   ];
 
+  // Состояния для статистики
+  const [statsData, setStatsData] = useState({
+    overview: null,
+    progress: null,
+    performance: null,
+    taskTypes: null
+  });
+  const [statsLoading, setStatsLoading] = useState(false);
+
   useEffect(() => {
     if (user) {
       setCurrentGrade(user.grade);
@@ -59,6 +69,13 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
       loadUserProfile();
     }
   }, [user]);
+
+  // useEffect для загрузки статистики при переходе в раздел прогресса
+  useEffect(() => {
+    if (activeSection === 'progress') {
+      fetchStatistics();
+    }
+  }, [activeSection]);
 
   const fetchGradeHistory = async () => {
     try {
@@ -113,6 +130,29 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
         city: user.city || '',
         teachers: user.teachers || []
       });
+    }
+  };
+
+  const fetchStatistics = async () => {
+    try {
+      setStatsLoading(true);
+      const [overview, progress, performance, taskTypes] = await Promise.all([
+        courseAPI.getStatsOverview(),
+        courseAPI.getStatsProgress(),
+        courseAPI.getStatsPerformance(),
+        courseAPI.getStatsTaskTypes()
+      ]);
+      
+      setStatsData({
+        overview: overview.data,
+        progress: progress.data,
+        performance: performance.data,
+        taskTypes: taskTypes.data
+      });
+    } catch (error) {
+      console.error('Error fetching statistics:', error);
+    } finally {
+      setStatsLoading(false);
     }
   };
 
@@ -285,6 +325,20 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Вспомогательная функция для получения ключа перевода предмета
+  const getSubjectKey = (subject) => {
+    const subjectMap = {
+      'математика': 'mathematics',
+      'физика': 'physics',
+      'химия': 'chemistry',
+      'биология': 'biology',
+      'русский язык': 'russian',
+      'немецкий язык': 'german',
+      'другой': 'other'
+    };
+    return subjectMap[subject] || 'other';
   };
 
   if (!user) return null;
@@ -714,31 +768,128 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
     </div>
   );
 
-  // Вспомогательная функция для получения ключа перевода предмета
-  const getSubjectKey = (subject) => {
-    const subjectMap = {
-      'математика': 'mathematics',
-      'физика': 'physics',
-      'химия': 'chemistry',
-      'биология': 'biology',
-      'русский язык': 'russian',
-      'немецкий язык': 'german',
-      'другой': 'other'
-    };
-    return subjectMap[subject] || 'other';
-  };
+  // РАЗДЕЛ СТАТИСТИКИ - ИСПОЛЬЗУЕМ ОТДЕЛЬНЫЙ КОМПОНЕНТ
+  const renderProgressSection = () => {
+    if (statsLoading) {
+      return (
+        <div className="space-y-6">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t('profile.sections.progress')}</h2>
+          <StatsCards loading={true} />
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+            <p className="text-gray-600 dark:text-gray-400 mt-4">{t('stats.loading')}</p>
+          </div>
+        </div>
+      );
+    }
 
-  // Остальные разделы с переводами
-  const renderProgressSection = () => (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t('profile.sections.progress')}</h2>
-      <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-        <p className="text-yellow-800 dark:text-yellow-200">
-          {t('profile.sections.progressDevelopment')}
-        </p>
+    return (
+      <div className="space-y-6">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t('profile.sections.progress')}</h2>
+        
+        {statsData.overview ? (
+          <>
+            <StatsCards overviewData={statsData.overview} />
+            
+            {/* Детальная статистика прогресса */}
+            {statsData.progress && statsData.progress.length > 0 && (
+              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  {t('stats.dailyProgress')}
+                </h3>
+                <div className="space-y-3">
+                  {statsData.progress.map((day) => (
+                    <div key={day.day} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <span className="font-medium text-gray-900 dark:text-white">
+                        {t('days.day')} {day.day}
+                      </span>
+                      <div className="flex items-center space-x-4">
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          {day.completed_tasks}/{day.total_tasks} {t('days.tasks')}
+                        </span>
+                        <span className="font-bold text-blue-600 dark:text-blue-400">
+                          {day.progress_percentage}%
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Статистика успеваемости */}
+            {statsData.performance && (
+              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  {t('stats.performance')}
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                      {statsData.performance.correct_answers}
+                    </div>
+                    <div className="text-sm text-green-600 dark:text-green-400">
+                      {t('stats.correctAnswers')}
+                    </div>
+                  </div>
+                  <div className="text-center p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                    <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+                      {statsData.performance.incorrect_answers}
+                    </div>
+                    <div className="text-sm text-red-600 dark:text-red-400">
+                      {t('stats.incorrectAnswers')}
+                    </div>
+                  </div>
+                  <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                    <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                      {statsData.performance.success_rate}%
+                    </div>
+                    <div className="text-sm text-blue-600 dark:text-blue-400">
+                      {t('stats.successRate')}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Статистика по типам заданий */}
+            {statsData.taskTypes && statsData.taskTypes.length > 0 && (
+              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  {t('stats.taskTypes')}
+                </h3>
+                <div className="space-y-3">
+                  {statsData.taskTypes.map((taskType, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <span className="font-medium text-gray-900 dark:text-white">
+                        {taskType.task_type}
+                      </span>
+                      <div className="flex items-center space-x-4">
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          {taskType.correct_count}/{taskType.count}
+                        </span>
+                        <span className={`font-bold ${
+                          taskType.success_rate >= 80 ? 'text-green-600 dark:text-green-400' :
+                          taskType.success_rate >= 60 ? 'text-yellow-600 dark:text-yellow-400' :
+                          'text-red-600 dark:text-red-400'
+                        }`}>
+                          {taskType.success_rate}%
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-gray-600 dark:text-gray-400">{t('stats.noData')}</p>
+          </div>
+        )}
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderAchievementsSection = () => (
     <div className="space-y-6">

@@ -525,5 +525,25 @@
     "russian": "Русский язык",
     "german": "Немецкий язык",
     "other": "Другой"
+  },
+  "stats": {
+    "title": "Статистика",
+    "overview": "Обзор",
+    "progress": "Прогресс",
+    "performance": "Успеваемость",
+    "taskTypes": "Типы заданий",
+    "totalDays": "Всего дней",
+    "completedDays": "Завершено дней",
+    "overallProgress": "Общий прогресс",
+    "successRate": "Успеваемость",
+    "dailyProgress": "Прогресс по дням",
+    "correctAnswers": "Правильные ответы",
+    "incorrectAnswers": "Неправильные ответы",
+    "taskType": "Тип задания",
+    "successRateByType": "Успеваемость по типам",
+    "allSubjects": "Все предметы",
+    "bySubject": "По предметам",
+    "loading": "Загрузка статистики...",
+    "noData": "Нет данных"
   }
 }

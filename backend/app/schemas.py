@@ -130,3 +130,34 @@ class SubjectHistoryResponse(SubjectHistoryBase):
 
     class Config:
         from_attributes = True
+
+# Схемы для статистики
+class StatsProgressResponse(BaseModel):
+    day: int
+    completed_tasks: int
+    total_tasks: int
+    progress_percentage: float
+    subject: Optional[str] = None
+
+class StatsPerformanceResponse(BaseModel):
+    total_answers: int
+    correct_answers: int
+    incorrect_answers: int
+    success_rate: float
+    subject: Optional[str] = None
+
+class StatsTaskTypesResponse(BaseModel):
+    task_type: str
+    count: int
+    correct_count: int
+    success_rate: float
+    subject: Optional[str] = None
+
+class StatsOverviewResponse(BaseModel):
+    total_days: int
+    completed_days: int
+    total_tasks: int
+    completed_tasks: int
+    overall_progress: float
+    overall_success_rate: float
+    average_daily_progress: float
