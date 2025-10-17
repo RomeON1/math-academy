@@ -55,8 +55,7 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
   const [statsData, setStatsData] = useState({
     overview: null,
     progress: null,
-    performance: null,
-    taskTypes: null
+    performance: null
   });
   const [statsLoading, setStatsLoading] = useState(false);
 
@@ -136,18 +135,16 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
   const fetchStatistics = async () => {
     try {
       setStatsLoading(true);
-      const [overview, progress, performance, taskTypes] = await Promise.all([
+      const [overview, progress, performance] = await Promise.all([
         courseAPI.getStatsOverview(),
         courseAPI.getStatsProgress(),
-        courseAPI.getStatsPerformance(),
-        courseAPI.getStatsTaskTypes()
+        courseAPI.getStatsPerformance()
       ]);
       
       setStatsData({
         overview: overview.data,
         progress: progress.data,
-        performance: performance.data,
-        taskTypes: taskTypes.data
+        performance: performance.data
       });
     } catch (error) {
       console.error('Error fetching statistics:', error);
@@ -848,36 +845,6 @@ const UserProfile = ({ user, onClose, onGradeChange, onSubjectChange }) => {
                       {t('stats.successRate')}
                     </div>
                   </div>
-                </div>
-              </div>
-            )}
-
-            {/* Статистика по типам заданий */}
-            {statsData.taskTypes && statsData.taskTypes.length > 0 && (
-              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  {t('stats.taskTypes')}
-                </h3>
-                <div className="space-y-3">
-                  {statsData.taskTypes.map((taskType, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                      <span className="font-medium text-gray-900 dark:text-white">
-                        {taskType.task_type}
-                      </span>
-                      <div className="flex items-center space-x-4">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
-                          {taskType.correct_count}/{taskType.count}
-                        </span>
-                        <span className={`font-bold ${
-                          taskType.success_rate >= 80 ? 'text-green-600 dark:text-green-400' :
-                          taskType.success_rate >= 60 ? 'text-yellow-600 dark:text-yellow-400' :
-                          'text-red-600 dark:text-red-400'
-                        }`}>
-                          {taskType.success_rate}%
-                        </span>
-                      </div>
-                    </div>
-                  ))}
                 </div>
               </div>
             )}

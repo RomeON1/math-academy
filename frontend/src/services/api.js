@@ -222,14 +222,9 @@ export const statsAPI = {
     const user = JSON.parse(localStorage.getItem('userData'));
     if (!user) throw new Error('User not authenticated');
     return api.get(`/users/${user.id}/stats/performance`);
-  },
-
-  // Статистика по типам заданий
-  getStatsTaskTypes: () => {
-    const user = JSON.parse(localStorage.getItem('userData'));
-    if (!user) throw new Error('User not authenticated');
-    return api.get(`/users/${user.id}/stats/task-types`);
   }
+
+  // 🟢 УБРАН МЕТОД ДЛЯ СТАТИСТИКИ ПО ТИПАМ ЗАДАНИЙ
 };
 
 // Добавляем методы в courseAPI для обратной совместимости
@@ -254,6 +249,7 @@ courseAPI.updateUserTeachers = profileAPI.updateUserTeachers;
 courseAPI.getStatsOverview = statsAPI.getStatsOverview;
 courseAPI.getStatsProgress = statsAPI.getStatsProgress;
 courseAPI.getStatsPerformance = statsAPI.getStatsPerformance;
-courseAPI.getStatsTaskTypes = statsAPI.getStatsTaskTypes;
+
+// 🟢 УБРАН МЕТОД ДЛЯ СТАТИСТИКИ ПО ТИПАМ ЗАДАНИЙ ИЗ courseAPI
 
 export default api;

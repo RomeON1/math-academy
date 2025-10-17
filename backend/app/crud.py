@@ -214,9 +214,20 @@ def save_user_answer(db: Session, user_id: int, day: int, task_index: int,
         "is_correct": is_correct
     }
 
+def get_total_tasks_for_day(db: Session, user_id: int, day: int) -> int:
+    """Получить реальное количество заданий для дня пользователя"""
+    return db.query(models.UserTask).filter(
+        and_(
+            models.UserTask.user_id == user_id,
+            models.UserTask.day == day
+        )
+    ).count()
+
 def update_progress_after_answer(db: Session, user_id: int, day: int):
-    """Обновляет прогресс после сохранения ответа"""
-    # Считаем количество правильных ответов для этого дня
+    """Обновляет прогресс после сохранения ответа - ИСПРАВЛЕННАЯ ВЕРСИЯ"""
+    # Считаем количество правильных ответов для этого дня - ДОБАВЛЯЕМ COMMIT ПЕРЕД ПОДСЧЕТОМ
+    db.commit()  # Гарантируем что все предыдущие изменения сохранены
+    
     correct_answers_count = db.query(models.UserAnswer).filter(
         and_(
             models.UserAnswer.user_id == user_id,
@@ -224,6 +235,13 @@ def update_progress_after_answer(db: Session, user_id: int, day: int):
             models.UserAnswer.is_correct == True
         )
     ).count()
+    
+    # Получаем реальное количество заданий для этого дня
+    total_tasks = get_total_tasks_for_day(db, user_id, day)
+    
+    # Если заданий нет, используем значение по умолчанию 10
+    if total_tasks == 0:
+        total_tasks = 10
     
     # Обновляем прогресс
     progress = db.query(models.UserProgress).filter(
@@ -235,17 +253,17 @@ def update_progress_after_answer(db: Session, user_id: int, day: int):
     
     if progress:
         progress.completed_tasks = correct_answers_count
+        progress.total_tasks = total_tasks
         progress.updated_at = datetime.utcnow()
     else:
         progress = models.UserProgress(
             user_id=user_id,
             day=day,
             completed_tasks=correct_answers_count,
-            total_tasks=10  # фиксированное количество заданий в день
+            total_tasks=total_tasks
         )
         db.add(progress)
     
-    # 🟢 ДОБАВЛЯЕМ COMMIT ДЛЯ СОХРАНЕНИЯ ИЗМЕНЕНИЙ
     db.commit()
 
 def get_user_answers(db: Session, user_id: int, version_id: int = None):
@@ -291,14 +309,21 @@ def get_user_progress(db: Session, user_id: int):
     days_with_tasks = set(str(task.day) for task in user_tasks)
     for day in days_with_tasks:
         if day not in result:
+            # Для дней без прогресса используем реальное количество заданий
+            total_tasks = get_total_tasks_for_day(db, user_id, int(day))
             result[day] = {
                 "completed_tasks": 0,
-                "total_tasks": 10
+                "total_tasks": total_tasks if total_tasks > 0 else 10
             }
     
     return result
 
 def update_user_progress(db: Session, user_id: int, day: int, completed_tasks: int):
+    # Получаем реальное количество заданий для дня
+    total_tasks = get_total_tasks_for_day(db, user_id, day)
+    if total_tasks == 0:
+        total_tasks = 10
+    
     progress = db.query(models.UserProgress).filter(
         and_(
             models.UserProgress.user_id == user_id,
@@ -308,13 +333,14 @@ def update_user_progress(db: Session, user_id: int, day: int, completed_tasks: i
     
     if progress:
         progress.completed_tasks = completed_tasks
+        progress.total_tasks = total_tasks
         progress.updated_at = datetime.utcnow()
     else:
         progress = models.UserProgress(
             user_id=user_id,
             day=day,
             completed_tasks=completed_tasks,
-            total_tasks=10
+            total_tasks=total_tasks
         )
         db.add(progress)
     
@@ -404,7 +430,7 @@ def update_user_teachers(db: Session, user_id: int, teachers_data: list):
 
 # Функции для статистики
 def get_user_progress_stats(db: Session, user_id: int, subject: str = None) -> List[Dict[str, Any]]:
-    """Получить статистику прогресса по дням"""
+    """Получить статистику прогресса по дням - ИСПРАВЛЕННАЯ ВЕРСИЯ"""
     query = db.query(models.UserProgress).filter(
         models.UserProgress.user_id == user_id
     )
@@ -416,12 +442,19 @@ def get_user_progress_stats(db: Session, user_id: int, subject: str = None) -> L
     
     stats = []
     for progress in progress_data:
-        total_tasks = progress.total_tasks or 10
-        progress_percentage = (progress.completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
+        # Используем реальные значения из базы, а не дефолтные
+        total_tasks = progress.total_tasks
+        completed_tasks = progress.completed_tasks
+        
+        # Проверяем корректность данных
+        if total_tasks == 0:
+            total_tasks = 10  # Защита от деления на ноль
+        
+        progress_percentage = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
         
         stats.append({
             "day": progress.day,
-            "completed_tasks": progress.completed_tasks,
+            "completed_tasks": completed_tasks,
             "total_tasks": total_tasks,
             "progress_percentage": round(progress_percentage, 2),
             "subject": progress.subject
@@ -453,66 +486,8 @@ def get_user_performance_stats(db: Session, user_id: int, subject: str = None) -
         "subject": subject
     }
 
-def get_user_task_types_stats(db: Session, user_id: int, subject: str = None) -> List[Dict[str, Any]]:
-    """Получить статистику по типам заданий - ИСПРАВЛЕННАЯ ВЕРСИЯ"""
-    query = db.query(models.UserTask).filter(
-        models.UserTask.user_id == user_id
-    )
-    
-    if subject:
-        query = query.filter(models.UserTask.subject == subject)
-    
-    tasks = query.all()
-    
-    # Группируем задания по типам (translation_key)
-    task_types = {}
-    for task in tasks:
-        task_type = task.translation_key or "unknown"
-        if task_type not in task_types:
-            task_types[task_type] = {"count": 0, "correct_count": 0}
-        task_types[task_type]["count"] += 1
-    
-    # Считаем правильные ответы для каждого типа заданий
-    # ИСПРАВЛЕНИЕ: явно указываем условия JOIN
-    for task_type in task_types:
-        type_query = db.query(models.UserAnswer).join(
-            models.UserTask,
-            and_(
-                models.UserAnswer.user_id == models.UserTask.user_id,
-                models.UserAnswer.day == models.UserTask.day,
-                models.UserAnswer.task_index == models.UserTask.task_index
-            )
-        ).filter(
-            models.UserAnswer.user_id == user_id,
-            models.UserTask.translation_key == task_type
-        )
-        
-        if subject:
-            type_query = type_query.filter(models.UserAnswer.subject == subject)
-        
-        type_answers = type_query.all()
-        correct_count = sum(1 for answer in type_answers if answer.is_correct)
-        task_types[task_type]["correct_count"] = correct_count
-    
-    # Формируем результат
-    stats = []
-    for task_type, data in task_types.items():
-        count = data["count"]
-        correct_count = data["correct_count"]
-        success_rate = (correct_count / count * 100) if count > 0 else 0
-        
-        stats.append({
-            "task_type": task_type,
-            "count": count,
-            "correct_count": correct_count,
-            "success_rate": round(success_rate, 2),
-            "subject": subject
-        })
-    
-    return stats
-
 def get_user_stats_overview(db: Session, user_id: int) -> Dict[str, Any]:
-    """Получить общую статистику пользователя"""
+    """Получить общую статистику пользователя - ИСПРАВЛЕННАЯ ВЕРСИЯ"""
     # Прогресс по дням
     progress_stats = get_user_progress_stats(db, user_id)
     
@@ -523,6 +498,7 @@ def get_user_stats_overview(db: Session, user_id: int) -> Dict[str, Any]:
     total_days = len(progress_stats)
     completed_days = sum(1 for day in progress_stats if day["progress_percentage"] >= 100)
     
+    # Используем реальные значения из прогресса, а не дефолтные
     total_tasks = sum(day["total_tasks"] for day in progress_stats)
     completed_tasks = sum(day["completed_tasks"] for day in progress_stats)
     

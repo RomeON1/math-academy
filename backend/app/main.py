@@ -10,7 +10,7 @@ from database import engine, get_db
 import models
 from models import User, UserGradeHistory, UserTeacher, UserSubjectHistory
 import schemas
-from schemas import UserCreate, UserLogin, TaskResponse, AnswerCreate, ProgressUpdate, TaskCreate, TeacherCreate, TeacherResponse, UserProfileUpdate, StatsProgressResponse, StatsPerformanceResponse, StatsTaskTypesResponse, StatsOverviewResponse
+from schemas import UserCreate, UserLogin, TaskResponse, AnswerCreate, ProgressUpdate, TaskCreate, TeacherCreate, TeacherResponse, UserProfileUpdate, StatsProgressResponse, StatsPerformanceResponse, StatsOverviewResponse
 from auth import get_current_user, create_access_token, get_password_hash, verify_password
 import crud
 from config import settings
@@ -489,24 +489,6 @@ async def get_user_performance_stats(
     except Exception as e:
         logger.error(f"Ошибка получения статистики успеваемости: {e}")
         raise HTTPException(status_code=500, detail="Failed to get performance stats")
-
-@app.get("/api/users/{user_id}/stats/task-types", response_model=List[StatsTaskTypesResponse])
-async def get_user_task_types_stats(
-    user_id: int,
-    subject: str = None,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Получить статистику по типам заданий"""
-    if current_user.id != user_id:
-        raise HTTPException(status_code=403, detail="Not authorized")
-    
-    try:
-        stats = crud.get_user_task_types_stats(db, user_id, subject)
-        return stats
-    except Exception as e:
-        logger.error(f"Ошибка получения статистики по типам заданий: {e}")
-        raise HTTPException(status_code=500, detail="Failed to get task types stats")
 
 @app.get("/api/users/{user_id}/stats/overview", response_model=StatsOverviewResponse)
 async def get_user_stats_overview(

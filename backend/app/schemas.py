@@ -146,12 +146,7 @@ class StatsPerformanceResponse(BaseModel):
     success_rate: float
     subject: Optional[str] = None
 
-class StatsTaskTypesResponse(BaseModel):
-    task_type: str
-    count: int
-    correct_count: int
-    success_rate: float
-    subject: Optional[str] = None
+# 🟢 УБРАНА СХЕМА ДЛЯ СТАТИСТИКИ ПО ТИПАМ ЗАДАНИЙ
 
 class StatsOverviewResponse(BaseModel):
     total_days: int

@@ -34,3 +34,4 @@ backup_*.sql
 
 # Cache
 frontend/node_modules/.cache/
+frontend/node_modules/.cache/
