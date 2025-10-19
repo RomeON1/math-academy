@@ -389,11 +389,19 @@ function App() {
     return totalTasks > 0 ? Math.round((totalCorrect / totalTasks) * 100) : 0;
   };
 
-  // 🟢 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Убрали resetProgress из БД
+
+  // 🟢 ИСПРАВЛЕННАЯ ФУНКЦИЯ СБРОСА ПРОГРЕССА
   const resetProgress = async () => {
     try {
-      console.log('🔄 Локальный сброс прогресса (БД не затрагивается)');
+      console.log('🔄 Полный сброс прогресса (БД + локальные данные)');
       
+      // 🟢 ВОССТАНОВЛЕНО: Сбрасываем прогресс в БД для авторизованных пользователей
+      if (user && user.isLoggedIn) {
+        await courseAPI.resetProgress();
+        console.log('✅ Прогресс сброшен в БД');
+      }
+      
+      // Генерируем новые задания локально
       const userTests = courseStructure.map(day => ({
         day: day.day,
         titleKey: day.titleKey,
@@ -407,10 +415,10 @@ function App() {
       localStorage.setItem('userMathTests', JSON.stringify(userTests));
       localStorage.setItem('userMathAnswers', JSON.stringify({}));
       
+      // Для авторизованных пользователей сохраняем новые задания в БД
       if (user && user.isLoggedIn) {
         setTimeout(async () => {
           try {
-            // 🟢 УБРАЛИ: await courseAPI.resetProgress(); - больше не сбрасываем БД
             console.log('💾 Сохраняем новые задания в БД...');
             for (const dayData of userTests) {
               await userAPI.saveTasks(dayData.day, dayData.tasks);
@@ -426,6 +434,7 @@ function App() {
       console.error('Error resetting progress:', error);
     }
   };
+
 
   const handleLoginClick = () => {
     setShowLogin(true);
