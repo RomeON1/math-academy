@@ -92,17 +92,16 @@ export const wordProblemsGenerator = (count, t) => {
         break;
 
       case 6: // Задача на возраст
-        const ageNow = getRandomInt(8, 12);
-        const yearsLater = getRandomInt(5, 8);
-        const fatherAgeNow = ageNow + 25;
-        const fatherAgeLater = fatherAgeNow + yearsLater;
-        question = `Сейчас сыну ${ageNow} лет, отцу ${fatherAgeNow} лет. Сколько лет будет отцу, когда сыну будет ${ageNow + yearsLater} лет?`;
+        const ageNow = getRandomInt(8, 14);
+        const yearsLater = getRandomInt(5, 10);
+        const futureAge = ageNow + yearsLater;
+        question = `Сейчас Маше ${ageNow} лет. Сколько ей будет через ${yearsLater} лет?`;
         translationKey = 'tasks.word_problems.age';
         translationParams = { age: ageNow, years: yearsLater };
-        answer = fatherAgeLater.toString();
-        explanation = `Разница в возрасте 25 лет. Когда сыну будет ${ageNow + yearsLater}, отцу будет ${fatherAgeLater} лет`;
+        answer = futureAge.toString();
+        explanation = `Через ${yearsLater} лет = ${ageNow} + ${yearsLater} = ${futureAge} лет`;
         explanationKey = 'tasks.word_problems.age_explanation';
-        explanationParams = { age: ageNow, years: yearsLater, result: fatherAgeLater };
+        explanationParams = { age: ageNow, years: yearsLater, result: futureAge };
         answerFormat = "число";
         formatKey = 'answerFormats.number';
         break;
@@ -155,10 +154,17 @@ export const wordProblemsGenerator = (count, t) => {
 
       case 10: // Задача на проценты (скидка)
         const original10 = getRandomInt(200, 600);
-        const discount10 = 17;
-        const newPrice10 = original10 * (1 - discount10/100);
+        const discount10 = getRandomInt(10, 30);
+        const newPrice10 = Math.round(original10 * (1 - discount10/100));
         question = `Товар стоил ${original10} руб. Скидка ${discount10}%. Найдите новую цену.`;
-        answer = Math.round(newPrice10).toString();
+        translationKey = 'tasks.word_problems.percentage';
+        translationParams = { original: original10, discount: discount10 };
+        answer = newPrice10.toString();
+        explanation = `Новая цена = ${original10} × (1 - ${discount10}/100) = ${newPrice10} руб.`;
+        explanationKey = 'tasks.word_problems.percentage_explanation';
+        explanationParams = { original: original10, discount: discount10, result: newPrice10 };
+        answerFormat = "число (руб.)";
+        formatKey = 'answerFormats.rub';
         break;
 
       default:
