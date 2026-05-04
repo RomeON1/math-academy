@@ -179,7 +179,7 @@ function App() {
           console.log('❌ В БД нет заданий, генерируем и сохраняем');
           // Только если в БД действительно нет заданий - генерируем
           const finalTests = courseStructure.map(day => ({
-            day: day.day,
+            ...day,
             titleKey: day.titleKey,
             theoryLink: day.theoryLink,
             tasks: taskGenerators[day.generator] ? taskGenerators[day.generator](day.taskCount, t) : []
@@ -190,7 +190,31 @@ function App() {
           
           // Сохраняем в БД
           for (const dayData of finalTests) {
-            await userAPI.saveTasks(dayData.day, dayData.tasks);
+            if (!dayData.tasks || dayData.tasks.length !== dayData.taskCount) {
+              console.error(`❌ Неверное количество заданий для дня ${dayData.day}: ${dayData.tasks?.length} вместо ${dayData.taskCount}`);
+              if (taskGenerators[dayData.generator]) {
+                let retryTasks = [];
+                let retryCount = 0;
+                while (retryTasks.length !== dayData.taskCount && retryCount < 10) {
+                  retryTasks = taskGenerators[dayData.generator](dayData.taskCount, t);
+                  retryCount += 1;
+                }
+                if (retryTasks.length === dayData.taskCount) {
+                  dayData.tasks = retryTasks;
+                } else {
+                  console.error(`❌ Не удалось сгенерировать ${dayData.taskCount} заданий для дня ${dayData.day} после ${retryCount} попыток`);
+                }
+              }
+            }
+
+            try {
+              const response = await userAPI.saveTasks(dayData.day, dayData.tasks);
+              if (response.data?.tasks_count !== dayData.tasks.length) {
+                console.warn(`⚠️ Сохранено ${response.data?.tasks_count} заданий для дня ${dayData.day}, ожидалось ${dayData.tasks.length}`);
+              }
+            } catch (saveError) {
+              console.error(`❌ Ошибка сохранения заданий для дня ${dayData.day}:`, saveError);
+            }
           }
         }
         

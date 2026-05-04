@@ -1,5 +1,7 @@
 import axios from 'axios';
 
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+
 const getAPIBaseURL = () => {
   return '/api';
 };
@@ -21,13 +23,17 @@ api.interceptors.request.use(
     const token = getToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.log(`🔐 Добавлен токен в запрос: ${config.url}`);
-    } else {
+      if (!IS_PRODUCTION) {
+        console.log(`🔐 Добавлен токен в запрос: ${config.url}`);
+      }
+    } else if (!IS_PRODUCTION) {
       console.log(`⚠️ Токен не найден для: ${config.url}`);
     }
     config.headers['Content-Type'] = 'application/json';
     config.headers['Accept'] = 'application/json';
-    console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`);
+    if (!IS_PRODUCTION) {
+      console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`);
+    }
     return config;
   },
   (error) => {

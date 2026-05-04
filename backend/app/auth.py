@@ -51,8 +51,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     )
     
     logger.info(f"🔐 Начало проверки токена. Длина: {len(token)}")
-    logger.info(f"🔐 Используемый SECRET_KEY: {settings.SECRET_KEY[:10]}...")
-    logger.info(f"🔐 Используемый ALGORITHM: {settings.ALGORITHM}")
+    logger.info(f"🔐 Используемый алгоритм: {settings.ALGORITHM}")
     
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
