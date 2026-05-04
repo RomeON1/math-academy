@@ -36,7 +36,7 @@ export const reviewGenerator = (count, t) => {
         explanationKey = 'tasks.review.geometry_explanation';
         explanationParams = { side: side2, result: area2 };
         answerFormat = "число (в см²)";
-        formatKey = 'answer极formats.cm2';
+        formatKey = 'answerFormats.cm2';
         break;
 
       case 3: // Уравнения

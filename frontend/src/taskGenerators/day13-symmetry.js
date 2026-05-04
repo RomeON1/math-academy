@@ -99,7 +99,7 @@ export const symmetryGenerator = (count, t) => {
         const naturalObjects6 = [
           { object: "лист дерева", symmetry: "билатеральная" },
           { object: "снежинка", symmetry: "радиальная" },
-          { object极: "морская звезда", symmetry: "радиальная" },
+          { object: "морская звезда", symmetry: "радиальная" },
           { object: "бабочка", symmetry: "билатеральная" },
           { object: "солнце", symmetry: "радиальная" }
         ];
