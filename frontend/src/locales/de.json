@@ -313,7 +313,7 @@
       "percentage_explanation": "Prozent = ({{part}} / {{whole}}) × 100 = {{result}}%",
       "frequency": "Ereignis trat {{value}} Mal von {{total}} auf. Finden Sie die Häufigkeit",
       "frequency_explanation": "Häufigkeit = ({{value}} / {{total}}) × 100 = {{result}}%",
-      "read_chart": "Laut Diagramm: Mathematik {{values.0}}%, Russisch {{values.1}}%, Geschichte {{values.2}}%, Biologie {{values.3}}%, Sport {{values.4}}%. Welches Fach ist am beliebtesten?",
+      "read_chart": "Laut Diagramm: Mathematik {{math}}%, Russisch {{russian}}%, Geschichte {{history}}%, Biologie {{biology}}%, Sport {{pe}}%. Welches Fach ist am beliebtesten?",
       "read_chart_fixed": "Laut Diagramm: Mathematik 25%, Russisch 20%, Geschichte 15%, Biologie 18%, Sport 22%. Welches Fach ist am beliebtesten?",
       "read_chart_fixed_explanation": "Höchster Prozentsatz (25%) bei Mathematik",
       "read_chart_explanation": "Höchster Prozentsatz bei {{subject}} - {{value}}%",

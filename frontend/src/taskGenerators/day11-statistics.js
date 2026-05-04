@@ -135,8 +135,12 @@ export const statisticsGenerator = (count, t) => {
         const maxValue = values8[maxIndex8];
         question = `По диаграмме: Математика ${values8[0]}%, Русский ${values8[1]}%, История ${values8[2]}%, Биология ${values8[3]}%, Физкультура ${values8[4]}%`;
         translationKey = 'tasks.statistics.read_chart';
-        translationParams = { 
-          values: values8.map((v, i) => `${subjects8[i]} ${v}%`).join(', ')
+        translationParams = {
+          math: values8[0],
+          russian: values8[1],
+          history: values8[2],
+          biology: values8[3],
+          pe: values8[4]
         };
         answer = maxSubject;
         explanation = `Самый высокий процент у ${maxSubject} - ${maxValue}%`;
