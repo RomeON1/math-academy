@@ -10,13 +10,22 @@ import DayNavigation from './components/DayNavigation';
 
 const applyTranslationsToTasks = (tasks, t) => {
   if (!tasks || !Array.isArray(tasks)) return [];
-  
-  return tasks.map(task => ({
-    ...task,
-    question: task.translationKey ? t(task.translationKey, task.translationParams) : task.question,
-    explanation: task.explanationKey ? t(task.explanationKey, task.explanationParams) : task.explanation,
-    answerFormat: task.formatKey ? t(task.formatKey) : task.answerFormat
-  }));
+
+  return tasks.map(task => {
+    const taskData = task.task_data || {};
+    const translationKey = task.translationKey || task.translation_key;
+    const translationParams = task.translationParams || task.translation_params;
+    const explanationKey = task.explanationKey || taskData.explanationKey;
+    const explanationParams = task.explanationParams || taskData.explanationParams;
+    const formatKey = task.formatKey || taskData.formatKey;
+
+    return {
+      ...task,
+      question: translationKey ? t(translationKey, translationParams) : task.question,
+      explanation: explanationKey ? t(explanationKey, explanationParams) : task.explanation,
+      answerFormat: formatKey ? t(formatKey) : task.answerFormat
+    };
+  });
 };
 
 const isCorrectAnswerCheck = (day, index, correctAnswer, currentAnswers) => {
