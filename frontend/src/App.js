@@ -161,22 +161,48 @@ function App() {
         const serverTasks = await userAPI.getAllTasks();
         if (serverTasks.data && Object.keys(serverTasks.data).length > 0) {
           console.log('✅ Задания загружены из БД');
-          const serverTests = Object.keys(serverTasks.data).map(dayStr => {
+          let serverTests = Object.keys(serverTasks.data).map(dayStr => {
             const day = parseInt(dayStr);
             const dayTasks = serverTasks.data[dayStr];
             const dayInfo = courseStructure.find(d => d.day === day) || {
               titleKey: `days.day${day}`,
-              theoryLink: null
+              theoryLink: null,
+              taskCount: 10
             };
-            
+
             return {
               day: day,
               titleKey: dayInfo.titleKey,
               theoryLink: dayInfo.theoryLink,
+              generator: dayInfo.generator,
+              taskCount: dayInfo.taskCount || 10,
               tasks: applyTranslationsToTasks(dayTasks, t)
             };
           });
-          
+
+          // Проверяем и регенерируем дни с недостаточным количеством заданий
+          for (const dayInfo of courseStructure) {
+            const existingDay = serverTests.find(d => d.day === dayInfo.day);
+            const expectedCount = dayInfo.taskCount || 10;
+            if (!existingDay || existingDay.tasks.length < expectedCount) {
+              console.log(`🔄 День ${dayInfo.day}: ${existingDay?.tasks.length || 0}/${expectedCount} заданий — регенерируем`);
+              if (taskGenerators[dayInfo.generator]) {
+                const newTasks = taskGenerators[dayInfo.generator](expectedCount, t);
+                try {
+                  await userAPI.saveTasks(dayInfo.day, newTasks);
+                } catch (e) {
+                  console.error(`❌ Ошибка сохранения дня ${dayInfo.day}:`, e);
+                }
+                if (existingDay) {
+                  existingDay.tasks = newTasks;
+                } else {
+                  serverTests.push({ day: dayInfo.day, titleKey: dayInfo.titleKey, theoryLink: dayInfo.theoryLink, tasks: newTasks });
+                }
+              }
+            }
+          }
+          serverTests = serverTests.sort((a, b) => a.day - b.day);
+
           setTests(serverTests);
           localStorage.setItem('userMathTests', JSON.stringify(serverTests));
           
